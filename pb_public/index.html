@@ -68,6 +68,11 @@
         </label>
         <span class="preview-duration" id="preview-duration"></span>
       </div>
+      <div class="style-picker">
+        <span class="style-picker-label">animation</span>
+        <div class="style-row" id="style-row" role="radiogroup" aria-label="Animation style"></div>
+        <p class="style-hint" id="style-hint"></p>
+      </div>
       <div class="preview-actions">
         <button class="primary-btn" id="start-btn">Begin</button>
         <button class="ghost-btn" id="share-btn" title="Copy shareable link">
@@ -84,8 +89,7 @@
   <section class="screen screen-session" id="screen-session">
     <div class="session-stage">
       <div class="orb-wrap" id="orb-wrap">
-        <div class="orb-halo" id="orb-halo"></div>
-        <div class="orb" id="orb"></div>
+        <div class="stage" id="stage"></div>
         <div class="orb-core" id="orb-core">
           <div class="phase-label" id="phase-label">breathe</div>
           <div class="phase-count" id="phase-count"></div>
@@ -168,6 +172,7 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="/js/pocketbase.umd.js"></script>
+  <script src="/js/styles.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

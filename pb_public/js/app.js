@@ -218,7 +218,17 @@
     for (const s of SCREENS) $(`screen-${s}`).classList.toggle("active", s === name);
     document.body.classList.toggle("in-session", name === "session");
     if (name !== "session") document.body.classList.remove("paused");
+    // Don't leave focus on a control inside a now-hidden screen — a later
+    // Space/Enter would "click" it invisibly.
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && !$(`screen-${name}`).contains(focused)) {
+      focused.blur();
+    }
     window.scrollTo(0, 0);
+  }
+
+  function currentScreen() {
+    return SCREENS.find((s) => $(`screen-${s}`).classList.contains("active"));
   }
 
   // ---------------------------------------------------------- home rendering
@@ -241,13 +251,15 @@
   }
 
   function renderHome() {
+    let cardIndex = 0;
     const grid = $("preset-grid");
     grid.innerHTML = "";
     for (const seq of state.presets) {
       const card = document.createElement("button");
       card.className = "seq-card";
       card.innerHTML = cardHTML(seq);
-      card.addEventListener("click", () => openPreview(seq));
+      const idx = cardIndex++;
+      card.addEventListener("click", () => { state.lastCardIndex = idx; openPreview(seq); });
       grid.appendChild(card);
     }
 
@@ -260,9 +272,46 @@
       card.className = "seq-card";
       card.innerHTML = cardHTML(seq) +
         (seq.source === "local" ? `<div class="meta" style="margin-top:6px">on this device</div>` : "");
-      card.addEventListener("click", () => openPreview(seq));
+      const idx = cardIndex++;
+      card.addEventListener("click", () => { state.lastCardIndex = idx; openPreview(seq); });
       mineGrid.appendChild(card);
     }
+  }
+
+  // ------------------------------------------------ keyboard navigation
+
+  function homeCards() {
+    return [...document.querySelectorAll("#preset-grid .seq-card, #mine-grid .seq-card")];
+  }
+
+  // How many cards share the first row (the grid is auto-fill, so measure).
+  function gridColumns() {
+    const cards = document.querySelectorAll("#preset-grid .seq-card");
+    if (!cards.length) return 1;
+    const top = cards[0].offsetTop;
+    let n = 0;
+    for (const c of cards) {
+      if (c.offsetTop === top) n++;
+      else break;
+    }
+    return n || 1;
+  }
+
+  function moveCardFocus(delta) {
+    const cards = homeCards();
+    if (!cards.length) return;
+    const idx = cards.indexOf(document.activeElement);
+    const next = idx === -1
+      ? (delta > 0 ? 0 : cards.length - 1)
+      : Math.max(0, Math.min(cards.length - 1, idx + delta));
+    cards[next].focus();
+  }
+
+  function backToHome() {
+    show("home");
+    const cards = homeCards();
+    const target = cards[state.lastCardIndex] || cards[0];
+    if (target) target.focus({ preventScroll: true });
   }
 
   // ---------------------------------------------------------- preview
@@ -277,7 +326,9 @@
     const own = seq.source === "account" || seq.source === "local";
     $("edit-btn").hidden = !own;
     $("delete-btn").hidden = !own;
+    renderStylePicker();
     show("preview");
+    $("start-btn").focus({ preventScroll: true });
   }
 
   function updatePreviewDuration() {
@@ -290,9 +341,39 @@
 
   // ---------------------------------------------------------- session engine
 
-  const ORB_MIN = 0.62;
-  const ORB_MAX = 1.0;
   const EASE = "cubic-bezier(0.37, 0, 0.63, 1)";
+  const LS_STYLE = "breathz.style";
+
+  let currentStyleId = localStorage.getItem(LS_STYLE) || "orb";
+  let builtStyleId = null;
+
+  function activeStyle() {
+    return window.BreathStyles.find((s) => s.id === currentStyleId) || window.BreathStyles[0];
+  }
+
+  // Build the active style's DOM if needed and apply its static baseline.
+  // Must be called with the session screen visible (styles measure the stage).
+  function ensureStage(level, phaseIdx) {
+    const stage = $("stage");
+    const style = activeStyle();
+    if (builtStyleId !== style.id) {
+      stage.getAnimations().forEach((a) => a.cancel());
+      stage.innerHTML = "";
+      style.build(stage);
+      builtStyleId = style.id;
+    }
+    style.set(stage, level, phaseIdx);
+  }
+
+  function animatePhase(ctx) {
+    const stage = $("stage");
+    if (reducedMotion.matches) {
+      // Gentle opacity pulse instead of movement, whatever the style.
+      const o = ctx.kind === "inhale" ? [0.55, 1] : ctx.kind === "exhale" ? [1, 0.55] : [1, 1];
+      return [stage.animate({ opacity: o }, { duration: ctx.durMs, easing: EASE, fill: "forwards" })];
+    }
+    return activeStyle().animate(stage, ctx);
+  }
 
   const session = {
     running: false,
@@ -300,7 +381,7 @@
     seq: null,
     flat: [],          // flattened [{kind, seconds, cycle}]
     idx: 0,
-    scale: ORB_MIN,    // orb scale at the START of current phase
+    level: 0,          // breath level 0 (exhaled) .. 1 (inhaled) at phase start
     anims: [],
     phaseStart: 0,     // performance.now() at phase start
     phaseDur: 0,       // ms
@@ -314,15 +395,15 @@
         for (const p of seq.phases) this.flat.push({ ...p, cycle: c + 1 });
       }
       this.idx = 0;
-      this.scale = ORB_MIN;
+      this.level = 0;
       this.running = true;
       this.paused = false;
       this.anims.forEach((a) => a.cancel()); // leftovers from a finished run
       this.anims = [];
       $("session-done").hidden = true;
       document.querySelector(".session-stage").style.display = "";
-      setOrbScale(ORB_MIN);
       show("session");
+      ensureStage(0, 0); // after show(): styles measure the visible stage
       $("pause-btn").textContent = "Pause";
       wakeLock.acquire();
       audio.ensure();
@@ -334,9 +415,9 @@
       if (this.idx >= this.flat.length) return this.finish();
 
       const phase = this.flat[this.idx];
-      const target = phase.kind === "inhale" ? ORB_MAX
-                   : phase.kind === "exhale" ? ORB_MIN
-                   : this.scale;
+      const target = phase.kind === "inhale" ? 1
+                   : phase.kind === "exhale" ? 0
+                   : this.level;
 
       $("phase-label").textContent = KIND_LABEL[phase.kind];
       $("cycle-indicator").textContent = `cycle ${phase.cycle} of ${this.seq.cycles}`;
@@ -345,10 +426,15 @@
       this.phaseDur = phase.seconds * 1000;
       this.phaseStart = performance.now();
       // Cancel the previous phase's animations (hold shimmers run forever,
-      // fill:'forwards' ones stay retained) before starting the next.
+      // fill:'forwards' ones stay retained), re-apply the static baseline the
+      // cancelled animations fall back to, then start this phase's animations.
       this.anims.forEach((a) => a.cancel());
-      this.anims = animateOrb(this.scale, target, this.phaseDur, phase.kind);
-      this.scale = target;
+      activeStyle().set($("stage"), this.level, this.idx);
+      this.anims = animatePhase({
+        from: this.level, to: target,
+        durMs: this.phaseDur, kind: phase.kind, phaseIdx: this.idx,
+      });
+      this.level = target;
 
       cancelAnimationFrame(this.raf);
       const tick = () => {
@@ -427,40 +513,26 @@
     },
   };
 
-  function setOrbScale(s) {
-    $("orb").style.transform = `scale(${s})`;
-    $("orb-halo").style.transform = `scale(${s})`;
-  }
+  // ---------------------------------------------------------- style picker
 
-  // Animate orb + halo for one phase. Returns the Animation objects.
-  function animateOrb(from, to, durMs, kind) {
-    const orb = $("orb");
-    const halo = $("orb-halo");
-    const opts = { duration: durMs, easing: EASE, fill: "forwards" };
-
-    if (reducedMotion.matches) {
-      // Gentle opacity pulse instead of movement.
-      const o = kind === "inhale" ? [0.55, 1] : kind === "exhale" ? [1, 0.55] : [1, 1];
-      return [
-        orb.animate({ opacity: o }, opts),
-        halo.animate({ opacity: o }, opts),
-      ];
+  function renderStylePicker() {
+    const row = $("style-row");
+    row.innerHTML = "";
+    for (const s of window.BreathStyles) {
+      const btn = document.createElement("button");
+      const selected = s.id === currentStyleId;
+      btn.className = "style-chip" + (selected ? " selected" : "");
+      btn.setAttribute("role", "radio");
+      btn.setAttribute("aria-checked", selected ? "true" : "false");
+      btn.textContent = s.name;
+      btn.addEventListener("click", () => {
+        currentStyleId = s.id;
+        localStorage.setItem(LS_STYLE, s.id);
+        renderStylePicker();
+      });
+      row.appendChild(btn);
     }
-
-    if (from === to) {
-      // hold: a barely-perceptible shimmer so the orb feels alive
-      const s = `scale(${from})`;
-      const s2 = `scale(${from * 1.015})`;
-      const holdOpts = { duration: Math.max(1200, durMs / 2), easing: EASE, iterations: Infinity, direction: "alternate" };
-      return [orb.animate({ transform: [s, s2] }, holdOpts), halo.animate({ transform: [s, s2] }, holdOpts)];
-    }
-
-    const kf = { transform: [`scale(${from})`, `scale(${to})`] };
-    const haloKf = {
-      transform: [`scale(${from})`, `scale(${to})`],
-      opacity: kind === "inhale" ? [0.7, 1] : [1, 0.7],
-    };
-    return [orb.animate(kf, opts), halo.animate(haloKf, opts)];
+    $("style-hint").textContent = activeStyle().hint;
   }
 
   // ---------------------------------------------------------- builder
@@ -478,6 +550,7 @@
       : "Saved sequences stay on this device. Sign in to sync them.";
     renderPhaseRows();
     show("builder");
+    $("builder-name").focus({ preventScroll: true });
   }
 
   function renderPhaseRows() {
@@ -662,7 +735,7 @@
     $("auth-form").addEventListener("submit", handleAuthSubmit);
 
     // preview
-    $("preview-back").addEventListener("click", () => show("home"));
+    $("preview-back").addEventListener("click", backToHome);
     $("preview-cycles").addEventListener("input", updatePreviewDuration);
     $("start-btn").addEventListener("click", () => {
       const err = validateSequence(state.current);
@@ -702,7 +775,7 @@
 
     // builder
     $("new-sequence-btn").addEventListener("click", () => openBuilder(null));
-    $("builder-back").addEventListener("click", () => show("home"));
+    $("builder-back").addEventListener("click", backToHome);
     $("builder-cycles").addEventListener("input", updateBuilderSummary);
     document.querySelectorAll("[data-add-kind]").forEach((btn) =>
       btn.addEventListener("click", () => {
@@ -719,11 +792,58 @@
       openPreview(seq);
     });
 
-    // keyboard: space toggles pause in session, esc ends
+    // ---- full keyboard navigation ----
+    // home: arrows move between cards, Enter/Space opens, N = new sequence
+    // preview: Space/Enter begins, E = edit, S = share, Esc = back
+    // session: Space = pause/resume, Esc = end; done: Space = again, Esc = home
+    // builder: Esc = back (form itself is Tab-navigable)
     document.addEventListener("keydown", (e) => {
-      if (!session.running) return;
-      if (e.code === "Space") { e.preventDefault(); session.paused ? session.resume() : session.pause(); }
-      if (e.code === "Escape") session.stop();
+      if ($("auth-dialog").open) return; // native dialog handles Esc/Tab
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      const typing = t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT";
+      // Let a focused button handle its own Space/Enter (native click).
+      const onButton = t.tagName === "BUTTON" && (e.code === "Space" || e.code === "Enter");
+      const screen = currentScreen();
+
+      if (screen === "session") {
+        if (onButton) return;
+        if (session.running) {
+          if (e.code === "Space") { e.preventDefault(); session.paused ? session.resume() : session.pause(); }
+          else if (e.code === "Escape") session.stop();
+        } else { // "well done" overlay
+          if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); session.start(state.current); }
+          else if (e.code === "Escape") backToHome();
+        }
+        return;
+      }
+
+      if (e.code === "Escape") {
+        if (typing) { t.blur(); return; }
+        if (screen === "preview" || screen === "builder") backToHome();
+        return;
+      }
+
+      if (typing || onButton) return;
+
+      if (screen === "home") {
+        const cols = gridColumns();
+        if (e.code === "ArrowRight") { e.preventDefault(); moveCardFocus(1); }
+        else if (e.code === "ArrowLeft") { e.preventDefault(); moveCardFocus(-1); }
+        else if (e.code === "ArrowDown") { e.preventDefault(); moveCardFocus(cols); }
+        else if (e.code === "ArrowUp") { e.preventDefault(); moveCardFocus(-cols); }
+        else if (e.key === "n" || e.key === "N") { e.preventDefault(); openBuilder(null); }
+      } else if (screen === "preview") {
+        if (e.code === "Space" || e.code === "Enter") {
+          e.preventDefault();
+          const err = validateSequence(state.current);
+          if (err) toast(err); else session.start(state.current);
+        } else if ((e.key === "e" || e.key === "E") && !$("edit-btn").hidden) {
+          openBuilder(state.current);
+        } else if (e.key === "s" || e.key === "S") {
+          $("share-btn").click();
+        }
+      }
     });
   }
 

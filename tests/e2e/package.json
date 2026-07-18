@@ -1,6 +1,6 @@
 {
   "name": "breathz-e2e",
   "private": true,
-  "scripts": { "test": "node test.js" },
+  "scripts": { "test": "node test.js && node kbd-styles.js" },
   "dependencies": { "playwright": "^1.50.0" }
 }
