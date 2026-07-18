@@ -701,9 +701,23 @@
       audio.ensure();
       if (!localStorage.getItem("breathz.swipeHintShown")) {
         localStorage.setItem("breathz.swipeHintShown", "1");
-        setTimeout(() => { if (this.running) toast("swipe ⟷ to change the scenery"); }, 2500);
+        setTimeout(() => { if (this.running) toast("swipe ⟷ to change the scenery"); }, 4500);
       }
-      this.runPhase();
+      // a settling countdown before the first breath (breathz.preroll seconds)
+      const preRaw = parseFloat(localStorage.getItem("breathz.preroll"));
+      let pre = isFinite(preRaw) ? Math.min(10, Math.max(0, Math.round(preRaw))) : 3;
+      if (pre === 0) { this.preRolling = false; this.runPhase(); return; }
+      this.preRolling = true;
+      $("phase-label").textContent = "ready";
+      $("cycle-indicator").textContent =
+        `${fmtCycles(seq.cycles)} · ${fmtDuration(seqDuration(seq))}`;
+      const countdown = (n) => {
+        if (!this.running) return;
+        if (n === 0) { this.preRolling = false; this.runPhase(); return; }
+        $("phase-count").textContent = n;
+        this.preTimer = setTimeout(() => countdown(n - 1), 1000);
+      };
+      countdown(pre);
     },
 
     runPhase() {
@@ -752,7 +766,7 @@
     },
 
     pause() {
-      if (!this.running || this.paused) return;
+      if (!this.running || this.paused || this.preRolling) return;
       this.paused = true;
       this.pausedAt = performance.now();
       this.anims.forEach((a) => a.pause());
@@ -805,6 +819,12 @@
       activeStyle().build(stage);
       builtStyleId = currentStyleId;
 
+      if (this.preRolling) { // still counting down — just show the new style
+        activeStyle().set(stage, 0, 0);
+        toast(activeStyle().name);
+        return;
+      }
+
       const phase = this.flat[this.idx];
       const elapsed = this.paused
         ? this.pausedAt - this.phaseStart
@@ -826,6 +846,8 @@
     stop(goHome = true) {
       this.running = false;
       this.paused = false;
+      this.preRolling = false;
+      clearTimeout(this.preTimer);
       cancelAnimationFrame(this.raf);
       this.anims.forEach((a) => a.cancel());
       this.anims = [];

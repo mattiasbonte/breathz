@@ -14,6 +14,7 @@ function check(name, cond) {
 (async () => {
   const browser = await chromium.launch({ executablePath: "/usr/bin/chromium" });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await page.addInitScript(() => localStorage.setItem("breathz.preroll", "0")); // tests skip the countdown
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
 
@@ -334,6 +335,27 @@ function check(name, cond) {
   await page.keyboard.press("Escape");
   await page.waitForSelector("#screen-home.active");
 
+  // --- pre-roll countdown (default behaviour)
+  await page.evaluate(() => localStorage.setItem("breathz.preroll", "3"));
+  await page.locator("#preset-grid .seq-card").first().click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#screen-session.active");
+  await page.waitForTimeout(400);
+  const readyLabel = await page.textContent("#phase-label");
+  const readyCount = await page.textContent("#phase-count");
+  check(`session opens with countdown ("${readyLabel} ${readyCount}")`,
+    readyLabel === "ready" && /^[123]$/.test(readyCount.trim()));
+  await page.waitForTimeout(3400);
+  const breathing = await page.textContent("#phase-label");
+  check(`breathing begins after countdown ("${breathing}")`,
+    ["in", "hold", "out"].includes(breathing));
+  await page.locator("#end-btn").click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+  await page.evaluate(() => localStorage.setItem("breathz.preroll", "0"));
+
   // --- pwa bits
   const swCount = await page.evaluate(async () =>
     (await navigator.serviceWorker.getRegistrations()).length);
@@ -341,6 +363,7 @@ function check(name, cond) {
 
   // --- mobile 320px: no horizontal scroll
   const mob = await browser.newPage({ viewport: { width: 320, height: 640 } });
+  await mob.addInitScript(() => localStorage.setItem("breathz.preroll", "0"));
   await mob.goto(BASE, { waitUntil: "networkidle" });
   await mob.waitForSelector("#preset-grid .seq-card");
   const hs = await mob.evaluate(() =>
