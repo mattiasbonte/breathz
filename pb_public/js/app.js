@@ -9,7 +9,7 @@
   const LS_SOUND = "breathz.sound";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-  const KIND_LABEL = { inhale: "breathe in", hold: "hold", exhale: "breathe out" };
+  const KIND_LABEL = { inhale: "in", hold: "hold", exhale: "out" };
   const KIND_SHORT = { inhale: "in", hold: "hold", exhale: "out" };
 
   const fmtSecs = (s) => (Number.isInteger(s) ? String(s) : s.toFixed(1));
