@@ -869,8 +869,9 @@
           if (e.code === "Space") { e.preventDefault(); session.paused ? session.resume() : session.pause(); }
           else if (e.code === "Escape") session.stop();
         } else { // "well done" overlay
-          if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); session.start(state.current); }
-          else if (e.code === "Escape") backToHome();
+          if (e.code === "Space" || e.code === "Enter" || e.code === "ArrowRight") {
+            e.preventDefault(); session.start(state.current);
+          } else if (e.code === "Escape" || e.code === "ArrowLeft") backToHome();
         }
         return;
       }
@@ -891,10 +892,28 @@
         else if (e.code === "ArrowUp") { e.preventDefault(); moveCardFocus(-cols); }
         else if (e.key === "n" || e.key === "N") { e.preventDefault(); openBuilder(null); }
       } else if (screen === "preview") {
-        if (e.code === "Space" || e.code === "Enter") {
-          e.preventDefault();
+        const beginSession = () => {
           const err = validateSequence(state.current);
           if (err) toast(err); else session.start(state.current);
+        };
+        // on a style chip, left/right cycle through the styles
+        if (t.classList?.contains("style-chip") &&
+            (e.code === "ArrowRight" || e.code === "ArrowLeft")) {
+          e.preventDefault();
+          const styles = window.BreathStyles;
+          const i = styles.findIndex((s) => s.id === currentStyleId);
+          const step = e.code === "ArrowRight" ? 1 : -1;
+          currentStyleId = styles[(i + step + styles.length) % styles.length].id;
+          localStorage.setItem(LS_STYLE, currentStyleId);
+          renderStylePicker();
+          styleDemo.start();
+          document.querySelector(".style-chip.selected")?.focus();
+        } else if (e.code === "ArrowRight") {
+          e.preventDefault(); beginSession();
+        } else if (e.code === "ArrowLeft") {
+          e.preventDefault(); backToHome();
+        } else if (e.code === "Space" || e.code === "Enter") {
+          e.preventDefault(); beginSession();
         } else if ((e.key === "e" || e.key === "E") && !$("edit-btn").hidden) {
           openBuilder(state.current);
         } else if (e.key === "s" || e.key === "S") {
