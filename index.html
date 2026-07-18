@@ -88,9 +88,10 @@
         <li><strong>Shape the practice.</strong> Pick a preset or create your own —
           sliders, or plain text like <code>in 4 / hold 7 / out 8</code>. Set the
           cycles, choose the animation, and add an intention phrase if you like.</li>
-        <li><strong>Share.</strong> The link carries everything: pattern, cycles,
+        <li><strong>Share.</strong> The link carries everything: pattern, parts,
           name, animation and intention. Add <code>&amp;by=Your%20Name</code> to the
-          end and the practice arrives signed by you.</li>
+          end and the practice arrives signed by you. The QR button on any
+          practice makes a printable code for studio walls and handout cards.</li>
         <li><strong>They breathe.</strong> It opens ready on any phone or laptop.
           Nothing is tracked and nothing leaves their device — their practice log
           stays local, and they can copy it to send you if you work that way.</li>
@@ -154,6 +155,9 @@
         <button class="ghost-btn" id="share-btn" title="Copy shareable link">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
           <span>Share</span>
+        </button>
+        <button class="ghost-btn icon-btn" id="qr-btn" title="Show QR code">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v2"/><path d="M14 20h2"/><path d="M19 19h2v2h-2z"/></svg>
         </button>
         <button class="ghost-btn icon-btn" id="fav-btn" hidden aria-pressed="false" title="Favorite">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path class="star-shape" d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.2 9.4l6.1-.8z"/></svg>
@@ -254,8 +258,18 @@
     </div>
   </section>
 
+  <dialog class="qr-dialog" id="qr-dialog">
+    <div class="qr-box">
+      <div class="qr-holder" id="qr-holder"></div>
+      <p class="qr-caption" id="qr-caption"></p>
+      <p class="qr-hint">scan to open this practice · long-press or right-click to save</p>
+      <button class="ghost-btn" id="qr-close">Close</button>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status"></div>
 
+  <script src="js/qr.js"></script>
   <script src="js/styles.js"></script>
   <script src="js/model.js"></script>
   <script src="js/app.js"></script>

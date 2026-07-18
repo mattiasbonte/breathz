@@ -1111,6 +1111,20 @@
         if (e?.name !== "AbortError") prompt("Copy this link:", url);
       }
     });
+    $("qr-btn").addEventListener("click", () => {
+      const url = encodeShare(state.current);
+      const qr = window.qrcode(0, "M"); // type 0 = auto-size
+      qr.addData(url);
+      qr.make();
+      $("qr-holder").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+      $("qr-caption").textContent = state.current.name;
+      $("qr-dialog").showModal();
+    });
+    $("qr-close").addEventListener("click", () => $("qr-dialog").close());
+    $("qr-dialog").addEventListener("click", (e) => {
+      if (e.target === $("qr-dialog")) $("qr-dialog").close(); // backdrop click
+    });
+
     $("fav-btn").addEventListener("click", () => {
       toggleFav(state.current);
       renderFavBtn();

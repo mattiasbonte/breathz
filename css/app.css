@@ -1444,6 +1444,47 @@ body.paused .phase-label { opacity: 0.4; }
   font-size: 0.9rem;
 }
 
+/* ---------- qr dialog ---------- */
+
+.qr-dialog {
+  margin: auto;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(160deg, #161c3a, #0e1329);
+  color: var(--ink);
+  padding: 30px;
+  width: min(360px, calc(100vw - 40px));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+.qr-dialog::backdrop {
+  background: rgba(6, 8, 18, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.qr-holder {
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  display: inline-block;
+  line-height: 0;
+}
+.qr-holder svg { width: 220px; height: 220px; }
+
+.qr-caption {
+  margin-top: 16px;
+  font-weight: 300;
+  font-size: 1.05rem;
+}
+
+.qr-hint {
+  margin: 10px 0 20px;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  font-weight: 300;
+  line-height: 1.6;
+}
+
 /* ---------- toast ---------- */
 
 .toast {
