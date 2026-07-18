@@ -66,15 +66,58 @@
     </section>
 
     <footer class="foot">
-      <p>free · open · yours</p>
+      <p><button class="link-btn" id="practitioners-link">for practitioners</button> · free · open · yours</p>
+      <p class="foot-log" id="foot-log" hidden>
+        <span id="log-count"></span> · <button class="link-btn" id="copy-log">copy your practice log</button>
+      </p>
     </footer>
   </main>
+
+  <!-- ============ FOR PRACTITIONERS ============ -->
+  <section class="screen screen-practitioners" id="screen-practitioners">
+    <button class="back-btn" id="practitioners-back" aria-label="Back">←</button>
+    <div class="practitioners-body">
+      <h2>For practitioners</h2>
+      <p class="pr-lede">
+        Build the exact exercise you teach, send one link.
+        Your client taps it and is breathing in five seconds — no install,
+        no account, no cost, and it keeps working offline.
+      </p>
+
+      <ol class="pr-steps">
+        <li><strong>Shape the practice.</strong> Pick a preset or create your own —
+          sliders, or plain text like <code>in 4 / hold 7 / out 8</code>. Set the
+          cycles, choose the animation, and add an intention phrase if you like.</li>
+        <li><strong>Share.</strong> The link carries everything: pattern, cycles,
+          name, animation and intention. Add <code>&amp;by=Your%20Name</code> to the
+          end and the practice arrives signed by you.</li>
+        <li><strong>They breathe.</strong> It opens ready on any phone or laptop.
+          Nothing is tracked and nothing leaves their device — their practice log
+          stays local, and they can copy it to send you if you work that way.</li>
+      </ol>
+
+      <div class="pr-example">
+        <span class="pr-example-label">a link looks like</span>
+        <code class="pr-example-url" id="pr-example-url"></code>
+        <div class="preview-actions">
+          <button class="ghost-btn" id="pr-example-open">See what your client sees</button>
+          <button class="ghost-btn" id="pr-example-copy">Copy example link</button>
+        </div>
+      </div>
+
+      <p class="pr-note">
+        breathz is free and stays free — no ads, no accounts, no data collection.
+        Use it with as many clients as you like.
+      </p>
+    </div>
+  </section>
 
   <!-- ============ PREVIEW / START ============ -->
   <section class="screen screen-preview" id="screen-preview" aria-live="polite">
     <button class="back-btn" id="preview-back" aria-label="Back">←</button>
     <div class="preview-body">
       <h2 id="preview-name">Box Breathing</h2>
+      <p class="preview-by" id="preview-by" hidden></p>
       <p class="preview-desc" id="preview-desc"></p>
       <div class="preview-pattern" id="preview-pattern"></div>
       <div class="preview-meta">

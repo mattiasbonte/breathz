@@ -371,6 +371,32 @@ function check(name, cond) {
   await page.waitForSelector("#screen-home.active");
   await page.evaluate(() => localStorage.setItem("breathz.preroll", "0"));
 
+  // --- practitioners: page, by= attribution, practice log
+  await page.locator("#practitioners-link").click();
+  await page.waitForSelector("#screen-practitioners.active");
+  check("practitioners page opens", (await page.textContent(".practitioners-body h2")) === "For practitioners");
+  const exUrl = await page.textContent("#pr-example-url");
+  check("example link shown", exUrl.includes("&by=Your Name"));
+  await page.locator("#pr-example-open").click();
+  await page.waitForSelector("#screen-preview.active");
+  const byLine = await page.textContent("#preview-by");
+  check(`by= shows attribution ("${byLine}")`, byLine === "prepared for you by Your Name");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+  // direct hash route
+  await page.goto(BASE + "/#practitioners", { waitUntil: "networkidle" });
+  await page.waitForSelector("#screen-practitioners.active");
+  check("hash #practitioners routes to page", true);
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+  // practice log (journal has entries from earlier in this run)
+  check("practice log offer visible", await page.locator("#foot-log").isVisible());
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.locator("#copy-log").click();
+  const log = await page.evaluate(() => navigator.clipboard.readText());
+  check(`practice log copies (${log.split("\\n").length} lines)`,
+    log.startsWith("my breathz practice log") && log.includes("Tiny Test"));
+
   // --- pwa bits
   const swCount = await page.evaluate(async () =>
     (await navigator.serviceWorker.getRegistrations()).length);

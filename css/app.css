@@ -1300,6 +1300,106 @@ body.paused .phase-label { opacity: 0.4; }
   min-height: 1.2em;
 }
 
+/* ---------- practitioners ---------- */
+
+.screen-practitioners {
+  position: relative;
+  min-height: calc(100dvh - 76px);
+  display: none;
+}
+.screen-practitioners.active { display: flex; }
+
+.practitioners-body {
+  margin: auto;
+  width: min(640px, calc(100vw - 48px));
+  padding: 40px 0 80px;
+}
+
+.practitioners-body h2 {
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  font-weight: 200;
+  text-align: center;
+  background: linear-gradient(120deg, #e8ebf7 30%, #a5b4fc 70%, #f0abfc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pr-lede {
+  margin-top: 16px;
+  text-align: center;
+  color: var(--ink-dim);
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.pr-steps {
+  margin: 34px 0 0 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: var(--ink-dim);
+  font-weight: 300;
+  line-height: 1.7;
+}
+.pr-steps strong { color: var(--ink); font-weight: 400; }
+.pr-steps code, .pr-example-url {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  color: var(--ink-dim);
+  background: rgba(148, 160, 220, 0.12);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+.pr-example {
+  margin-top: 34px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  text-align: center;
+}
+
+.pr-example-label {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 12px;
+}
+
+.pr-example-url {
+  display: block;
+  padding: 10px 14px;
+  word-break: break-all;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.pr-example .preview-actions { margin-top: 20px; }
+
+.pr-note {
+  margin-top: 30px;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.preview-by {
+  margin-top: 10px;
+  color: var(--exhale);
+  font-size: 0.85rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+}
+
+.foot-log { margin-top: 10px; }
+
 /* ---------- session done extras ---------- */
 
 .mood-row { margin-top: 28px; }

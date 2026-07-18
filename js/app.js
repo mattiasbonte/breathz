@@ -235,6 +235,8 @@
       seq.style = validStyleId(params.get("v"));
       const intention = params.get("i");
       if (intention) seq.intention = intention.slice(0, 120);
+      const by = params.get("by");
+      if (by) seq.by = by.slice(0, 60);
       return seq;
     } catch { return null; }
   }
@@ -329,7 +331,7 @@
 
   // ---------------------------------------------------------- screens
 
-  const SCREENS = ["home", "preview", "session", "builder"];
+  const SCREENS = ["home", "preview", "session", "builder", "practitioners"];
   function show(name) {
     for (const s of SCREENS) $(`screen-${s}`).classList.toggle("active", s === name);
     document.body.classList.toggle("in-session", name === "session");
@@ -573,6 +575,10 @@
     const grid = $("preset-grid");
     grid.innerHTML = "";
     for (const seq of visiblePresets()) grid.appendChild(makeCard(seq, cardIndex++));
+
+    const n = journal().length;
+    $("foot-log").hidden = n === 0;
+    if (n) $("log-count").textContent = `${n} session${n === 1 ? "" : "s"} breathed`;
   }
 
   // ------------------------------------------------ keyboard helpers
@@ -615,6 +621,19 @@
     }
   }
 
+  // ---------------------------------------------------- practitioners page
+
+  function practitionerExampleHash() {
+    return "#s=i4-h7-e8&c=6&n=Evening%20wind-down&v=bloom&i=let%20the%20day%20go&by=Your%20Name";
+  }
+
+  function openPractitioners() {
+    $("pr-example-url").textContent =
+      `${window.location.origin}${window.location.pathname}`.replace(/index\.html$/, "") +
+      "#s=i4-h7-e8&c=6&n=Evening wind-down&v=bloom&i=let the day go&by=Your Name";
+    show("practitioners");
+  }
+
   // ---------------------------------------------------------- preview
 
   function openPreview(seq) {
@@ -622,6 +641,8 @@
     // each practice opens in its natural animation; the picker still overrides
     if (validStyleId(seq.style)) currentStyleId = seq.style;
     $("preview-name").textContent = seq.name;
+    $("preview-by").textContent = seq.by ? `prepared for you by ${seq.by}` : "";
+    $("preview-by").hidden = !seq.by;
     $("preview-desc").textContent = seq.description || "";
     $("preview-pattern").innerHTML = seq.phases.map(chipHTML).join("");
     $("preview-cycles").value = seq.cycles;
@@ -1231,6 +1252,30 @@
       toast("Image removed");
     });
 
+    // practitioners
+    $("practitioners-link").addEventListener("click", openPractitioners);
+    $("practitioners-back").addEventListener("click", () => backToHome(false));
+    $("pr-example-open").addEventListener("click", () => {
+      const seq = decodeShare(practitionerExampleHash());
+      if (seq) openPreview(seq);
+    });
+    $("pr-example-copy").addEventListener("click", async () => {
+      const url = `${window.location.origin}${window.location.pathname}${practitionerExampleHash()}`;
+      try { await navigator.clipboard.writeText(url); toast("Example link copied"); }
+      catch { prompt("Copy this link:", url); }
+    });
+
+    // practice log — a text summary the client can paste to their practitioner
+    $("copy-log").addEventListener("click", async () => {
+      const lines = journal().map((e) => {
+        const d = new Date(e.t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+        return `${d} — ${e.seq}, ${fmtCycles(e.cycles)}${e.mood ? ` — felt ${e.mood}` : ""}`;
+      });
+      const text = `my breathz practice log\n${lines.join("\n")}`;
+      try { await navigator.clipboard.writeText(text); toast("Practice log copied"); }
+      catch { prompt("Copy your log:", text); }
+    });
+
     // swipe left/right anywhere on the session screen to change the scenery
     let swipeStart = null;
     const sessionScreen = $("screen-session");
@@ -1314,7 +1359,7 @@
 
       if (e.code === "Escape") {
         if (typing) { t.blur(); return; }
-        if (screen === "preview" || screen === "builder") backToHome();
+        if (screen === "preview" || screen === "builder" || screen === "practitioners") backToHome();
         return;
       }
 
@@ -1377,6 +1422,11 @@
 
     // shared link? (also handle links opened while the app is already running)
     const handleSharedHash = () => {
+      if (window.location.hash === "#practitioners") {
+        openPractitioners();
+        history.replaceState(null, "", window.location.pathname);
+        return;
+      }
       const shared = decodeShare(window.location.hash);
       if (shared) {
         if (session.running) session.stop(false);
