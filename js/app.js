@@ -560,8 +560,10 @@
     const mood = MOODS.find((m) => m.id === state.mood);
     $("deck-title").textContent = mood ? `for when you feel ${mood.label}` : "Practices";
 
-    // Yours: own creations + favorited presets, shown first.
-    const yours = [...state.local, ...PRESETS.filter(isFav)];
+    // Yours: own creations + favorited presets, shown first. With a mood
+    // active it narrows to related practices, same as the deck below.
+    let yours = [...state.local, ...PRESETS.filter(isFav)];
+    if (mood) yours = yours.filter((s) => mood.practices.includes(s.name));
     let cardIndex = 0;
     $("mine-deck").hidden = yours.length === 0;
     const mineGrid = $("mine-grid");

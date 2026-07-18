@@ -274,6 +274,21 @@ function check(name, cond) {
   check("unstar removes from Yours",
     (await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').count()) === 0);
 
+  // moods also filter the Yours deck
+  await page.locator('#preset-grid .seq-card:has-text("Box Breathing") .fav-star').click();
+  await page.locator('.mood-chip:has-text("going deeper")').click();
+  check("mood hides unrelated Yours entries",
+    (await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').count()) === 0);
+  await page.locator('.mood-chip:has-text("stressed")').click();
+  check("mood keeps related Yours entries",
+    (await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').count()) === 1);
+  await page.locator('.mood-chip:has-text("stressed")').click(); // deselect
+  await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#fav-btn").click(); // unstar again to restore state
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+
   // --- in-session style switching: arrows + swipe
   await page.locator("#preset-grid .seq-card").first().click();
   await page.waitForSelector("#screen-preview.active");

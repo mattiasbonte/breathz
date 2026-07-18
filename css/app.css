@@ -115,8 +115,9 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 /* ---------- top bar ---------- */
 
 .topbar {
-  position: sticky;
-  top: 0;
+  /* scrolls away with the page — a floating bar over content reads as
+     clutter in a calm app (and overlapped the hero on small screens) */
+  position: relative;
   z-index: 20;
   display: flex;
   align-items: center;
