@@ -248,29 +248,37 @@
       if (!this.ctx) return;
       const t = this.ctx.currentTime;
       const peak = 0.13 * this.volume;
-      const gain = this.ctx.createGain();
-      gain.connect(this.ctx.destination);
-      const osc = this.ctx.createOscillator();
-      osc.type = "sine";
-      osc.connect(gain);
+
+      // one soft bell note with the same gentle envelope as the original cues
+      const note = (freq, at, level, decay = 1.3) => {
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.exponentialRampToValueAtTime(level, at + 0.18);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+        o.connect(g).connect(this.ctx.destination);
+        o.start(at); o.stop(at + decay + 0.1);
+      };
 
       if (kind === "inhale") {
-        osc.frequency.setValueAtTime(293.66, t);                       // D4…
-        osc.frequency.exponentialRampToValueAtTime(440, t + 0.7);      // …rising to A4
-        gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.exponentialRampToValueAtTime(peak, t + 0.25);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
-        osc.start(t); osc.stop(t + 1.4);
+        // two warm notes stepping up — direction without a siren-like sweep
+        note(261.63, t, peak * 0.7);         // C4…
+        note(329.63, t + 0.22, peak);        // …E4
+        return;
       } else if (kind === "exhale") {
-        osc.frequency.setValueAtTime(440, t);                          // A4…
-        osc.frequency.exponentialRampToValueAtTime(261.63, t + 0.9);   // …falling to C4
-        gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.exponentialRampToValueAtTime(peak, t + 0.2);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
-        osc.start(t); osc.stop(t + 1.6);
+        note(329.63, t, peak * 0.7);         // E4…
+        note(261.63, t + 0.26, peak, 1.6);   // …settling on C4
+        return;
       } else {
+        // hold: two barely-detuned tones beating slowly over a level plateau
+        const gain = this.ctx.createGain();
+        gain.connect(this.ctx.destination);
+        const osc = this.ctx.createOscillator();
         const osc2 = this.ctx.createOscillator();
-        osc2.type = "sine";
+        osc.type = osc2.type = "sine";
+        osc.connect(gain);
         osc2.connect(gain);
         osc.frequency.value = 329.63;  // E4
         osc2.frequency.value = 331.2;  // slightly sharp → ~1.6 Hz beat, "held" stillness
