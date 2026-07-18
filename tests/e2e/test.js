@@ -428,6 +428,8 @@ function check(name, cond) {
   const indicator = await page.textContent("#cycle-indicator");
   check(`segment title shown ("${indicator}")`, indicator.includes("hold"));
   check("release button visible", await page.locator("#hold-release").isVisible());
+  const nextUp = await page.textContent("#next-up");
+  check(`next part announced ("${nextUp}")`, nextUp.includes("close"));
   const countUp1 = await page.textContent("#phase-count");
   await page.waitForTimeout(1200);
   const countUp2 = await page.textContent("#phase-count");

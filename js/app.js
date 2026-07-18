@@ -240,23 +240,47 @@
       }
       if (this.ctx.state === "suspended") this.ctx.resume();
     },
-    // A soft chime: gentle sine with slow attack/release. Different pitch per phase.
+    // Directional cues: inhale glides up, exhale glides down, hold is a
+    // level suspended shimmer (two barely-detuned tones beating slowly).
     cue(kind) {
       if (!this.enabled || this.volume <= 0) return;
       this.ensure();
       if (!this.ctx) return;
-      const freqs = { inhale: 392, hold: 329.63, exhale: 261.63 }; // G4, E4, C4
       const t = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
+      const peak = 0.13 * this.volume;
       const gain = this.ctx.createGain();
+      gain.connect(this.ctx.destination);
+      const osc = this.ctx.createOscillator();
       osc.type = "sine";
-      osc.frequency.value = freqs[kind] || 329.63;
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.13 * this.volume, t + 0.18);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
-      osc.connect(gain).connect(this.ctx.destination);
-      osc.start(t);
-      osc.stop(t + 1.5);
+      osc.connect(gain);
+
+      if (kind === "inhale") {
+        osc.frequency.setValueAtTime(293.66, t);                       // D4…
+        osc.frequency.exponentialRampToValueAtTime(440, t + 0.7);      // …rising to A4
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(peak, t + 0.25);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+        osc.start(t); osc.stop(t + 1.4);
+      } else if (kind === "exhale") {
+        osc.frequency.setValueAtTime(440, t);                          // A4…
+        osc.frequency.exponentialRampToValueAtTime(261.63, t + 0.9);   // …falling to C4
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(peak, t + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+        osc.start(t); osc.stop(t + 1.6);
+      } else {
+        const osc2 = this.ctx.createOscillator();
+        osc2.type = "sine";
+        osc2.connect(gain);
+        osc.frequency.value = 329.63;  // E4
+        osc2.frequency.value = 331.2;  // slightly sharp → ~1.6 Hz beat, "held" stillness
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(peak * 0.8, t + 0.3);
+        gain.gain.setValueAtTime(peak * 0.8, t + 0.9);                 // level plateau
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.9);
+        osc.start(t); osc.stop(t + 2);
+        osc2.start(t); osc2.stop(t + 2);
+      }
     },
   };
 
@@ -701,9 +725,13 @@
       const segs = segmentsOf(seq);
       segs.forEach((seg, segIdx) => {
         const cycles = seg.cycles || 1;
+        const next = segs[segIdx + 1];
         for (let c = 0; c < cycles; c++) {
           for (const p of seg.phases) {
-            this.flat.push({ ...p, cycle: c + 1, cycles, segIdx, segCount: segs.length, segTitle: seg.title });
+            const entry = { ...p, cycle: c + 1, cycles, segIdx, segCount: segs.length, segTitle: seg.title };
+            // announce the upcoming part, but only once this one is ending
+            if (next && c === cycles - 1) entry.nextTitle = next.title || `part ${segIdx + 2}`;
+            this.flat.push(entry);
           }
         }
       });
@@ -755,6 +783,8 @@
 
       $("phase-label").textContent = KIND_LABEL[phase.kind];
       $("cycle-indicator").textContent = this.phaseIndicator(phase);
+      $("next-up").textContent = phase.nextTitle ? `then · ${phase.nextTitle}` : "";
+      $("next-up").hidden = !phase.nextTitle;
       $("hold-release").hidden = !phase.open;
       audio.cue(phase.kind);
       haptics.pulse(phase.kind);
