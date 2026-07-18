@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="breathz — a calm, configurable breathing companion. Box breathing, 4-7-8 and your own custom sequences. Free, no account needed.">
+  <meta name="theme-color" content="#0a0e1f">
+  <title>breathz — breathe with intention</title>
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="aurora" aria-hidden="true">
+    <div class="aurora-blob aurora-a"></div>
+    <div class="aurora-blob aurora-b"></div>
+    <div class="aurora-blob aurora-c"></div>
+  </div>
+
+  <header class="topbar" id="topbar">
+    <a class="brand" href="/" id="brand-link">breathz</a>
+    <nav class="topbar-actions">
+      <button class="ghost-btn" id="sound-toggle" aria-pressed="false" title="Sound cues">
+        <svg class="icon icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="icon icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>
+      </button>
+      <button class="ghost-btn" id="auth-btn">Sign in</button>
+    </nav>
+  </header>
+
+  <!-- ============ HOME ============ -->
+  <main class="screen screen-home active" id="screen-home">
+    <section class="hero">
+      <h1>Breathe with intention</h1>
+      <p class="hero-sub">Pick a practice or shape your own rhythm.<br>No account, no noise — just breath.</p>
+    </section>
+
+    <section class="deck" aria-label="Breathing practices">
+      <div class="deck-head">
+        <h2>Practices</h2>
+        <button class="pill-btn" id="new-sequence-btn">+ Create your own</button>
+      </div>
+      <div class="card-grid" id="preset-grid"></div>
+    </section>
+
+    <section class="deck" id="mine-deck" hidden aria-label="Your sequences">
+      <div class="deck-head"><h2>Yours</h2></div>
+      <div class="card-grid" id="mine-grid"></div>
+    </section>
+
+    <footer class="foot">
+      <p>free · open · yours — <a href="https://github.com" rel="noopener">self-host it</a></p>
+    </footer>
+  </main>
+
+  <!-- ============ PREVIEW / START ============ -->
+  <section class="screen screen-preview" id="screen-preview" aria-live="polite">
+    <button class="back-btn" id="preview-back" aria-label="Back">←</button>
+    <div class="preview-body">
+      <h2 id="preview-name">Box Breathing</h2>
+      <p class="preview-desc" id="preview-desc"></p>
+      <div class="preview-pattern" id="preview-pattern"></div>
+      <div class="preview-meta">
+        <label class="cycles-label">
+          <span>cycles</span>
+          <input type="number" id="preview-cycles" min="1" max="500" value="10">
+        </label>
+        <span class="preview-duration" id="preview-duration"></span>
+      </div>
+      <div class="preview-actions">
+        <button class="primary-btn" id="start-btn">Begin</button>
+        <button class="ghost-btn" id="share-btn" title="Copy shareable link">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+          <span>Share</span>
+        </button>
+        <button class="ghost-btn" id="edit-btn" hidden>Edit</button>
+        <button class="ghost-btn danger" id="delete-btn" hidden>Delete</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SESSION ============ -->
+  <section class="screen screen-session" id="screen-session">
+    <div class="session-stage">
+      <div class="orb-wrap" id="orb-wrap">
+        <div class="orb-halo" id="orb-halo"></div>
+        <div class="orb" id="orb"></div>
+        <div class="orb-core" id="orb-core">
+          <div class="phase-label" id="phase-label">breathe</div>
+          <div class="phase-count" id="phase-count"></div>
+        </div>
+      </div>
+      <div class="session-info">
+        <span id="cycle-indicator"></span>
+      </div>
+      <div class="session-controls">
+        <button class="ghost-btn" id="pause-btn">Pause</button>
+        <button class="ghost-btn" id="end-btn">End</button>
+      </div>
+    </div>
+    <div class="session-done" id="session-done" hidden>
+      <h2>Well done.</h2>
+      <p id="done-summary"></p>
+      <div class="preview-actions">
+        <button class="primary-btn" id="again-btn">Once more</button>
+        <button class="ghost-btn" id="done-home-btn">Home</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BUILDER ============ -->
+  <section class="screen screen-builder" id="screen-builder">
+    <button class="back-btn" id="builder-back" aria-label="Back">←</button>
+    <div class="builder-body">
+      <h2 id="builder-title">Create a sequence</h2>
+      <label class="field">
+        <span>Name</span>
+        <input type="text" id="builder-name" maxlength="100" placeholder="Evening wind-down">
+      </label>
+      <div class="field">
+        <span>Phases</span>
+        <div class="phase-rows" id="phase-rows"></div>
+        <div class="phase-add-row">
+          <button class="pill-btn" data-add-kind="inhale">+ inhale</button>
+          <button class="pill-btn" data-add-kind="hold">+ hold</button>
+          <button class="pill-btn" data-add-kind="exhale">+ exhale</button>
+        </div>
+      </div>
+      <label class="field field-inline">
+        <span>Cycles</span>
+        <input type="number" id="builder-cycles" min="1" max="500" value="10">
+      </label>
+      <p class="builder-summary" id="builder-summary"></p>
+      <p class="form-error" id="builder-error" role="alert"></p>
+      <div class="preview-actions">
+        <button class="primary-btn" id="builder-save">Save</button>
+        <button class="ghost-btn" id="builder-try">Try without saving</button>
+      </div>
+      <p class="builder-note" id="builder-note"></p>
+    </div>
+  </section>
+
+  <!-- ============ AUTH DIALOG ============ -->
+  <dialog class="auth-dialog" id="auth-dialog">
+    <form method="dialog" class="auth-form" id="auth-form">
+      <h2 id="auth-title">Welcome back</h2>
+      <label class="field">
+        <span>Email</span>
+        <input type="email" id="auth-email" autocomplete="email" required>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" id="auth-password" autocomplete="current-password" minlength="8" required>
+      </label>
+      <p class="form-error" id="auth-error" role="alert"></p>
+      <div class="preview-actions">
+        <button type="submit" class="primary-btn" id="auth-submit">Sign in</button>
+        <button type="button" class="ghost-btn" id="auth-cancel">Cancel</button>
+      </div>
+      <p class="auth-switch">
+        <span id="auth-switch-text">No account yet?</span>
+        <button type="button" class="link-btn" id="auth-switch-btn">Create one</button>
+      </p>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="/js/pocketbase.umd.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
