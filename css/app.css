@@ -206,10 +206,10 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 
 .icon { width: 18px; height: 18px; }
 
-#sound-toggle .icon-sound-on { display: none; }
-#sound-toggle .icon-sound-off { display: block; }
-#sound-toggle[aria-pressed="true"] .icon-sound-on { display: block; }
-#sound-toggle[aria-pressed="true"] .icon-sound-off { display: none; }
+.icon-sound-on { display: none; }
+.icon-sound-off { display: block; }
+[aria-pressed="true"] > .icon-sound-on { display: block; }
+[aria-pressed="true"] > .icon-sound-off { display: none; }
 
 /* ---------- screens ---------- */
 

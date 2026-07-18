@@ -6,10 +6,10 @@
   <meta name="description" content="breathz — a calm, configurable breathing companion. Box breathing, 4-7-8 and your own custom sequences. Free, no account needed.">
   <meta name="theme-color" content="#0a0e1f">
   <title>breathz — breathe with intention</title>
-  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="/css/app.css">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
   <div class="aurora" aria-hidden="true">
@@ -19,7 +19,7 @@
   </div>
 
   <header class="topbar" id="topbar">
-    <a class="brand" href="/" id="brand-link">breathz</a>
+    <a class="brand" href="./" id="brand-link">breathz</a>
     <nav class="topbar-actions">
       <button class="ghost-btn icon-btn" id="sound-toggle" aria-pressed="false" title="Sound cues">
         <svg class="icon icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -115,6 +115,10 @@
       <div class="session-controls">
         <button class="ghost-btn" id="pause-btn">Pause</button>
         <button class="ghost-btn" id="end-btn">End</button>
+        <button class="ghost-btn icon-btn session-sound" id="session-sound" aria-pressed="false" title="Sound cues">
+          <svg class="icon icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg>
+          <svg class="icon icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>
+        </button>
       </div>
     </div>
     <div class="session-done" id="session-done" hidden>
@@ -170,7 +174,7 @@
 
   <div class="toast" id="toast" role="status"></div>
 
-  <script src="/js/styles.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="js/styles.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

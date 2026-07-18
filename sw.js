@@ -1,16 +1,18 @@
-/* breathz service worker — precache the app shell so sessions work offline. */
-const CACHE = "breathz-v2";
+/* breathz service worker — precache the app shell so sessions work offline.
+   Base-relative so the app can live at any path (domain root or subfolder). */
+const CACHE = "breathz-v3";
+const BASE = new URL(".", self.location).pathname; // "/" or "/subpath/"
 const SHELL = [
-  "/",
-  "/index.html",
-  "/css/app.css",
-  "/js/app.js",
-  "/js/styles.js",
-  "/manifest.webmanifest",
-  "/icons/favicon.svg",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-];
+  "",
+  "index.html",
+  "css/app.css",
+  "js/app.js",
+  "js/styles.js",
+  "manifest.webmanifest",
+  "icons/favicon.svg",
+  "icons/icon-192.png",
+  "icons/icon-512.png",
+].map((p) => BASE + p);
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -26,8 +28,6 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  // Never intercept the API or admin UI.
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_/")) return;
   if (e.request.method !== "GET") return;
 
   // Network-first for navigation (fresh HTML when online), cache fallback offline.
@@ -36,10 +36,10 @@ self.addEventListener("fetch", (e) => {
       fetch(e.request)
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put("/index.html", copy));
+          caches.open(CACHE).then((c) => c.put(BASE + "index.html", copy));
           return res;
         })
-        .catch(() => caches.match("/index.html"))
+        .catch(() => caches.match(BASE + "index.html"))
     );
     return;
   }

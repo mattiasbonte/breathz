@@ -1,0 +1,31 @@
+/* Builds dist/breathz.html — the whole app inlined into one self-contained
+   document, for single-file hosts (e.g. an R2 bucket). No service worker in
+   this build; everything else works identically. */
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+
+let html = readFileSync("index.html", "utf8");
+const css = readFileSync("css/app.css", "utf8");
+const styles = readFileSync("js/styles.js", "utf8");
+const app = readFileSync("js/app.js", "utf8");
+const favicon = readFileSync("icons/favicon.svg").toString("base64");
+
+const replaced = [];
+function swap(from, to, label) {
+  if (!html.includes(from)) throw new Error(`missing marker: ${label}`);
+  html = html.replace(from, to);
+  replaced.push(label);
+}
+
+swap('<link rel="stylesheet" href="css/app.css">', `<style>\n${css}\n</style>`, "css");
+swap('<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">',
+  `<link rel="icon" href="data:image/svg+xml;base64,${favicon}" type="image/svg+xml">`, "favicon");
+html = html.replace(/\s*<link rel="apple-touch-icon"[^>]*>/, "");
+html = html.replace(/\s*<link rel="manifest"[^>]*>/, "");
+swap('<script src="js/styles.js"></script>', `<script>\n${styles}\n</script>`, "styles.js");
+swap('<script src="js/app.js"></script>', `<script>\n${app}\n</script>`, "app.js");
+// no sw.js next to a single file — skip registration cleanly
+html = html.replace('navigator.serviceWorker.register("sw.js")', "Promise.resolve()");
+
+mkdirSync("dist", { recursive: true });
+writeFileSync("dist/breathz.html", html);
+console.log(`dist/breathz.html — ${(html.length / 1024).toFixed(0)} KB (${replaced.join(", ")})`);

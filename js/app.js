@@ -239,9 +239,18 @@
   };
 
   function renderToggles() {
-    $("sound-toggle").setAttribute("aria-pressed", audio.enabled ? "true" : "false");
+    const pressed = audio.enabled ? "true" : "false";
+    $("sound-toggle").setAttribute("aria-pressed", pressed);
+    $("session-sound").setAttribute("aria-pressed", pressed);
     $("haptics-toggle").hidden = !haptics.supported;
     $("haptics-toggle").setAttribute("aria-pressed", haptics.enabled ? "true" : "false");
+  }
+
+  function toggleSound() {
+    audio.enabled = !audio.enabled;
+    localStorage.setItem(LS_SOUND, audio.enabled ? "1" : "0");
+    if (audio.enabled) { audio.ensure(); audio.cue("hold"); }
+    renderToggles();
   }
 
   // ---------------------------------------------------------- wake lock
@@ -807,12 +816,8 @@
   function bind() {
     $("brand-link").addEventListener("click", (e) => { e.preventDefault(); backToHome(false); });
 
-    $("sound-toggle").addEventListener("click", () => {
-      audio.enabled = !audio.enabled;
-      localStorage.setItem(LS_SOUND, audio.enabled ? "1" : "0");
-      if (audio.enabled) { audio.ensure(); audio.cue("hold"); }
-      renderToggles();
-    });
+    $("sound-toggle").addEventListener("click", toggleSound);
+    $("session-sound").addEventListener("click", toggleSound);
 
     $("haptics-toggle").addEventListener("click", () => {
       haptics.enabled = !haptics.enabled;
@@ -914,6 +919,7 @@
         if (session.running) {
           if (e.code === "Space") { e.preventDefault(); session.paused ? session.resume() : session.pause(); }
           else if (e.code === "Escape") session.stop();
+          else if (e.key === "m" || e.key === "M") toggleSound();
         } else { // "well done" overlay
           if (e.code === "Space" || e.code === "Enter" || e.code === "ArrowRight") {
             e.preventDefault(); session.start(state.current);
@@ -994,7 +1000,7 @@
     window.addEventListener("hashchange", handleSharedHash);
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker.register("sw.js").catch(() => {});
     }
   }
 
