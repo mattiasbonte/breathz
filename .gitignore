@@ -1,3 +1,4 @@
 pb_data/
 breathz
 *.log
+tests/e2e/node_modules/

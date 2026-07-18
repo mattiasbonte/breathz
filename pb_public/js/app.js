@@ -737,12 +737,17 @@
     await loadMine();
     renderHome();
 
-    // shared link?
-    const shared = decodeShare(window.location.hash);
-    if (shared) {
-      openPreview(shared);
-      history.replaceState(null, "", "/");
-    }
+    // shared link? (also handle links opened while the app is already running)
+    const handleSharedHash = () => {
+      const shared = decodeShare(window.location.hash);
+      if (shared) {
+        if (session.running) session.stop(false);
+        openPreview(shared);
+        history.replaceState(null, "", "/");
+      }
+    };
+    handleSharedHash();
+    window.addEventListener("hashchange", handleSharedHash);
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});

@@ -457,9 +457,10 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 .phase-count {
   margin-top: 8px;
   font-size: clamp(2rem, 7vmin, 3.2rem);
-  font-weight: 100;
+  font-weight: 200;
   font-variant-numeric: tabular-nums;
-  color: var(--ink-dim);
+  color: rgba(240, 244, 255, 0.92);
+  text-shadow: 0 1px 12px rgba(10, 14, 31, 0.45);
 }
 
 .session-info {
@@ -536,8 +537,37 @@ body.paused .phase-label { opacity: 0.4; }
 
 .phase-row input[type="range"] {
   flex: 1;
-  accent-color: var(--accent);
-  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(154, 163, 199, 0.25);
+  outline: none;
+}
+.phase-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.5);
+  cursor: pointer;
+}
+.phase-row input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.5);
+  cursor: pointer;
+}
+.phase-row input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(154, 163, 199, 0.25);
 }
 
 .phase-row .secs {
