@@ -416,5 +416,241 @@
     },
   };
 
-  window.BreathStyles = [orb, rings, bloom, box, triangle, tide, cosmos, sway, mandala, column, beacon];
+  // ------------------------------------------------------------ 12. nebula
+
+  const nebula = {
+    id: "nebula",
+    name: "Nebula",
+    hint: "slow-turning clouds of light, swelling with every breath",
+    _s: (lv) => 0.66 + lv * 0.4,
+    build(stage) {
+      const holder = el(stage, "nebula-holder");
+      el(holder, "neb-cloud neb-a");
+      el(holder, "neb-cloud neb-b");
+      el(holder, "neb-cloud neb-c");
+      for (let i = 0; i < 14; i++) {
+        const angle = i * 137.5 * (Math.PI / 180);
+        const radius = 10 + ((i * 6151) % 30);
+        el(holder, "neb-star", {
+          left: `${50 + Math.cos(angle) * radius}%`,
+          top: `${50 + Math.sin(angle) * radius}%`,
+          width: `${1.5 + (i % 3)}px`, height: `${1.5 + (i % 3)}px`,
+          animationDelay: `${(i * 397) % 3000}ms`,
+        });
+      }
+    },
+    set(stage, lv) {
+      const h = stage.querySelector(".nebula-holder");
+      h.style.transform = `scale(${this._s(lv)})`;
+      h.style.opacity = 0.7 + lv * 0.3;
+    },
+    animate(stage, ctx) {
+      if (ctx.kind === "hold") return genericHold(stage, ctx.durMs);
+      const h = stage.querySelector(".nebula-holder");
+      return [fwd(h, {
+        transform: [`scale(${this._s(ctx.from)})`, `scale(${this._s(ctx.to)})`],
+        opacity: [0.7 + ctx.from * 0.3, 0.7 + ctx.to * 0.3],
+      }, ctx.durMs)];
+    },
+  };
+
+  // -------------------------------------------------------------- 13. veil
+
+  const veil = {
+    id: "veil",
+    name: "Aurora",
+    hint: "curtains of northern light lift as you breathe in",
+    _n: 5,
+    _y: (lv) => 16 - lv * 22, // % translateY per bar
+    build(stage) {
+      const holder = el(stage, "veil-holder");
+      for (let i = 0; i < this._n; i++) el(holder, `veil-bar veil-${i}`);
+    },
+    set(stage, lv) {
+      stage.querySelectorAll(".veil-bar").forEach((b, i) => {
+        b.style.transform = `translateY(${this._y(lv) + i * 1.5}%)`;
+        b.style.opacity = 0.35 + lv * 0.55;
+      });
+    },
+    animate(stage, ctx) {
+      if (ctx.kind === "hold") return genericHold(stage, ctx.durMs);
+      const anims = [];
+      stage.querySelectorAll(".veil-bar").forEach((b, i) => {
+        anims.push(fwd(b, {
+          transform: [
+            `translateY(${this._y(ctx.from) + i * 1.5}%)`,
+            `translateY(${this._y(ctx.to) + i * 1.5}%)`,
+          ],
+          opacity: [0.35 + ctx.from * 0.55, 0.35 + ctx.to * 0.55],
+        }, ctx.durMs, i * 90));
+      });
+      return anims;
+    },
+  };
+
+  // ------------------------------------------------------------ 14. flower
+
+  const flower = {
+    id: "flower",
+    name: "Flower of Life",
+    hint: "six circles unfold from one — sacred geometry in motion",
+    _r: (lv) => 4 + lv * 21, // % outward travel of the outer circles
+    build(stage) {
+      const holder = el(stage, "fol-holder");
+      el(holder, "fol-circle fol-center");
+      for (let i = 0; i < 6; i++) {
+        const arm = el(holder, "fol-arm");
+        arm.style.transform = `rotate(${i * 60}deg)`;
+        el(arm, "fol-circle fol-outer");
+      }
+    },
+    set(stage, lv) {
+      stage.querySelector(".fol-holder").style.transform = `rotate(${lv * 24}deg) scale(${0.82 + lv * 0.18})`;
+      stage.querySelectorAll(".fol-outer").forEach((c) => {
+        c.style.transform = `translateY(-${this._r(lv)}%)`;
+        c.style.opacity = 0.35 + lv * 0.5;
+      });
+    },
+    animate(stage, ctx) {
+      if (ctx.kind === "hold") return genericHold(stage, ctx.durMs);
+      const anims = [fwd(stage.querySelector(".fol-holder"), {
+        transform: [
+          `rotate(${ctx.from * 24}deg) scale(${0.82 + ctx.from * 0.18})`,
+          `rotate(${ctx.to * 24}deg) scale(${0.82 + ctx.to * 0.18})`,
+        ],
+      }, ctx.durMs)];
+      stage.querySelectorAll(".fol-outer").forEach((c) => {
+        anims.push(fwd(c, {
+          transform: [`translateY(-${this._r(ctx.from)}%)`, `translateY(-${this._r(ctx.to)}%)`],
+          opacity: [0.35 + ctx.from * 0.5, 0.35 + ctx.to * 0.5],
+        }, ctx.durMs));
+      });
+      return anims;
+    },
+  };
+
+  // -------------------------------------------------------------- 15. moon
+
+  const moon = {
+    id: "moon",
+    name: "Moon",
+    hint: "waxing to full as you fill, waning as you release",
+    _shadow: (lv) => lv * 106, // % the shadow slides away
+    build(stage) {
+      el(stage, "moon-glow");
+      const disc = el(stage, "moon-disc");
+      el(disc, "moon-shadow");
+      for (let i = 0; i < 10; i++) {
+        const angle = i * 137.5 * (Math.PI / 180);
+        const radius = 34 + ((i * 3571) % 12);
+        el(stage, "neb-star", {
+          left: `${50 + Math.cos(angle) * radius}%`,
+          top: `${50 + Math.sin(angle) * radius}%`,
+          width: "2px", height: "2px",
+          animationDelay: `${(i * 631) % 3000}ms`,
+        });
+      }
+    },
+    set(stage, lv) {
+      stage.querySelector(".moon-shadow").style.transform = `translateX(${this._shadow(lv)}%)`;
+      stage.querySelector(".moon-glow").style.opacity = 0.15 + lv * 0.6;
+    },
+    animate(stage, ctx) {
+      if (ctx.kind === "hold") return genericHold(stage, ctx.durMs);
+      return [
+        fwd(stage.querySelector(".moon-shadow"), {
+          transform: [`translateX(${this._shadow(ctx.from)}%)`, `translateX(${this._shadow(ctx.to)}%)`],
+        }, ctx.durMs),
+        fwd(stage.querySelector(".moon-glow"), {
+          opacity: [0.15 + ctx.from * 0.6, 0.15 + ctx.to * 0.6],
+        }, ctx.durMs),
+      ];
+    },
+  };
+
+  // --------------------------------------------------------- 16. fireflies
+
+  const fireflies = {
+    id: "fireflies",
+    name: "Fireflies",
+    hint: "a meadow of warm lights, drawing close on the in-breath",
+    _n: 18,
+    _s: (lv) => 1.15 - lv * 0.45,
+    build(stage) {
+      const holder = el(stage, "fly-holder");
+      for (let i = 0; i < this._n; i++) {
+        const angle = i * 137.5 * (Math.PI / 180);
+        const radius = 14 + ((i * 4241) % 32);
+        el(holder, "firefly", {
+          left: `${50 + Math.cos(angle) * radius}%`,
+          top: `${50 + Math.sin(angle) * radius}%`,
+          width: `${3 + (i % 3)}px`, height: `${3 + (i % 3)}px`,
+          animationDelay: `${(i * 577) % 4000}ms, ${(i * 811) % 2600}ms`,
+          animationDuration: `${3400 + (i % 5) * 700}ms, ${1900 + (i % 4) * 500}ms`,
+        });
+      }
+      el(stage, "fly-heart");
+    },
+    set(stage, lv) {
+      stage.querySelector(".fly-holder").style.transform = `scale(${this._s(lv)})`;
+      const heart = stage.querySelector(".fly-heart");
+      heart.style.transform = `scale(${0.6 + lv * 0.5})`;
+      heart.style.opacity = 0.25 + lv * 0.55;
+    },
+    animate(stage, ctx) {
+      if (ctx.kind === "hold") return genericHold(stage, ctx.durMs);
+      return [
+        fwd(stage.querySelector(".fly-holder"), {
+          transform: [`scale(${this._s(ctx.from)})`, `scale(${this._s(ctx.to)})`],
+        }, ctx.durMs),
+        fwd(stage.querySelector(".fly-heart"), {
+          transform: [`scale(${0.6 + ctx.from * 0.5})`, `scale(${0.6 + ctx.to * 0.5})`],
+          opacity: [0.25 + ctx.from * 0.55, 0.25 + ctx.to * 0.55],
+        }, ctx.durMs),
+      ];
+    },
+  };
+
+  // ------------------------------------------------------------ 17. vision
+  // Breathes with a personal image (the user's "target slide"): set one via
+  // “set an intention” in the preview. Falls back to a soft orb when empty.
+
+  const vision = {
+    id: "vision",
+    name: "Vision",
+    hint: "your own image breathing with you — add one under “set an intention”",
+    _s: (lv) => 0.68 + lv * 0.32,
+    build(stage) {
+      el(stage, "vision-halo");
+      const disc = el(stage, "vision-disc");
+      const img = localStorage.getItem("breathz.visionImage");
+      if (img) disc.style.backgroundImage = `url(${img})`;
+      else disc.classList.add("vision-empty");
+    },
+    set(stage, lv) {
+      const s = `scale(${this._s(lv)})`;
+      stage.querySelector(".vision-disc").style.transform = s;
+      const halo = stage.querySelector(".vision-halo");
+      halo.style.transform = s;
+      halo.style.opacity = 0.4 + lv * 0.6;
+    },
+    animate(stage, ctx) {
+      if (ctx.kind === "hold") return genericHold(stage, ctx.durMs);
+      const f = this._s(ctx.from), t = this._s(ctx.to);
+      return [
+        fwd(stage.querySelector(".vision-disc"), {
+          transform: [`scale(${f})`, `scale(${t})`],
+        }, ctx.durMs),
+        fwd(stage.querySelector(".vision-halo"), {
+          transform: [`scale(${f})`, `scale(${t})`],
+          opacity: [0.4 + ctx.from * 0.6, 0.4 + ctx.to * 0.6],
+        }, ctx.durMs),
+      ];
+    },
+  };
+
+  window.BreathStyles = [
+    orb, rings, bloom, box, triangle, tide, cosmos, sway, mandala, column, beacon,
+    nebula, veil, flower, moon, fireflies, vision,
+  ];
 })();

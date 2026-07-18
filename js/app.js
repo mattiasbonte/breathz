@@ -14,6 +14,8 @@
   const LS_LAST = "breathz.lastSeq";
   const LS_JOURNAL = "breathz.journal";
   const LS_FAVS = "breathz.favorites";
+  const LS_INTENTION = "breathz.intention";
+  const LS_VISION = "breathz.visionImage";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const KIND_LABEL = { inhale: "in", hold: "hold", exhale: "out" };
@@ -84,6 +86,27 @@
     { name: "Energize", style: "mandala", cycles: 20,
       description: "Faster rhythmic breathing to wake up body and mind. Stop if you feel light-headed.",
       phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 2 }] },
+    { name: "Nadi Shodhana Pace", style: "sway", cycles: 12,
+      description: "The timing of yogic alternate-nostril breathing: close one nostril, inhale, hold, exhale through the other, then switch sides each cycle. Balancing and clarifying.",
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+    { name: "Sufi Heart Rhythm", style: "mandala", cycles: 12,
+      description: "Even, devotional breathing in the Sufi manner — steady counts with a soft pause at each turn, attention resting in the heart.",
+      phases: [{ kind: "inhale", seconds: 5 }, { kind: "hold", seconds: 1 }, { kind: "exhale", seconds: 5 }, { kind: "hold", seconds: 1 }] },
+    { name: "Rhythmic Journey", style: "cosmos", cycles: 40,
+      description: "Shamanic-style connected breathing: no pauses, like breathing to a steady drum. Sit or lie down, and return to normal breath if you feel dizzy or tingly.",
+      phases: [{ kind: "inhale", seconds: 2.5 }, { kind: "exhale", seconds: 2.5 }] },
+    { name: "Bhastrika Bellows", style: "column", cycles: 30,
+      description: "Yogic bellows breath — vigorous equal in and out through the nose. Practice seated on an empty stomach and stop at any dizziness. Not during pregnancy or with high blood pressure.",
+      phases: [{ kind: "inhale", seconds: 1 }, { kind: "exhale", seconds: 1 }] },
+    { name: "Kapalabhati Pace", style: "rings", cycles: 30,
+      description: "Skull-shining breath: a passive inhale, then a short sharp exhale from the belly. A cleansing yogic kriya — seated, empty stomach, stop at any dizziness.",
+      phases: [{ kind: "inhale", seconds: 1.5 }, { kind: "exhale", seconds: 0.5 }] },
+    { name: "Buteyko Soft Breath", style: "beacon", cycles: 15,
+      description: "Reduced, gentle nasal breathing with a relaxed pause after the exhale — the Buteyko way to quiet over-breathing and air hunger.",
+      phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 3 }, { kind: "hold", seconds: 3 }] },
+    { name: "Kumbhaka 1-4-2", style: "triangle", cycles: 5,
+      description: "The classical pranayama ratio: hold four times the inhale, exhale twice it. Advanced — build up gently and never strain the hold.",
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 16 }, { kind: "exhale", seconds: 8 }] },
   ].map((p) => ({ ...p, source: "preset" }));
 
   // Feeling-based selection. Practices are matched by exact preset name.
@@ -99,13 +122,16 @@
       practices: ["4-7-8 Relaxing Breath", "Deep Sleep 4-8", "Wind Down"] },
     { id: "tired", label: "low energy",
       note: "Brisk, even breaths gently raise alertness. Stop if you feel light-headed.",
-      practices: ["Energize", "Equal Breathing"] },
+      practices: ["Energize", "Bhastrika Bellows", "Kapalabhati Pace"] },
     { id: "scattered", label: "unfocused",
       note: "Counting edges and corners anchors attention back in the body.",
-      practices: ["Box Breathing", "Triangle Breathing", "Ujjayi Pace"] },
+      practices: ["Box Breathing", "Triangle Breathing", "Nadi Shodhana Pace"] },
     { id: "balanced", label: "balanced",
       note: "Coherent breathing keeps a good day steady — about five and a half breaths a minute.",
       practices: ["Coherent Breathing", "Equal Breathing", "Ujjayi Pace"] },
+    { id: "deep", label: "going deeper",
+      note: "Older traditions — yogic, Sufi, shamanic — used breath as a doorway. Take these slowly and seated.",
+      practices: ["Sufi Heart Rhythm", "Nadi Shodhana Pace", "Rhythmic Journey", "Kumbhaka 1-4-2", "Buteyko Soft Breath"] },
   ];
 
   const state = {
@@ -178,6 +204,8 @@
     let hash = `#s=${s}&c=${seq.cycles}`;
     if (seq.name) hash += `&n=${encodeURIComponent(seq.name)}`;
     hash += `&v=${seq.style || currentStyleId}`;
+    const intention = seq.intention ?? localStorage.getItem(LS_INTENTION);
+    if (intention) hash += `&i=${encodeURIComponent(intention)}`;
     return `${window.location.origin}${window.location.pathname}${hash}`;
   }
 
@@ -205,6 +233,8 @@
       };
       if (validateSequence(seq)) return null;
       seq.style = validStyleId(params.get("v"));
+      const intention = params.get("i");
+      if (intention) seq.intention = intention.slice(0, 120);
       return seq;
     } catch { return null; }
   }
@@ -661,11 +691,18 @@
       this.anims = [];
       $("session-done").hidden = true;
       document.querySelector(".session-stage").style.display = "";
+      const intention = seq.intention ?? localStorage.getItem(LS_INTENTION);
+      $("intention-line").textContent = intention || "";
+      $("intention-line").hidden = !intention;
       show("session");
       ensureStage(0, 0); // after show(): styles measure the visible stage
       $("pause-btn").textContent = "Pause";
       wakeLock.acquire();
       audio.ensure();
+      if (!localStorage.getItem("breathz.swipeHintShown")) {
+        localStorage.setItem("breathz.swipeHintShown", "1");
+        setTimeout(() => { if (this.running) toast("swipe ⟷ to change the scenery"); }, 2500);
+      }
       this.runPhase();
     },
 
@@ -685,6 +722,8 @@
 
       this.phaseDur = phase.seconds * 1000;
       this.phaseStart = performance.now();
+      this.phaseFrom = this.level;
+      this.phaseTo = target;
       // Cancel the previous phase's animations (hold shimmers run forever,
       // fill:'forwards' ones stay retained), re-apply the static baseline the
       // cancelled animations fall back to, then start this phase's animations.
@@ -746,6 +785,42 @@
         }
       };
       this.raf = requestAnimationFrame(tick);
+    },
+
+    // Switch the animation style while breathing (swipe / arrow keys). The
+    // new style picks the breath up at its current level and finishes the
+    // phase, so the rhythm never stutters.
+    switchStyle(step) {
+      if (!this.running) return;
+      const styles = window.BreathStyles;
+      const i = styles.findIndex((s) => s.id === currentStyleId);
+      currentStyleId = styles[(i + step + styles.length) % styles.length].id;
+      localStorage.setItem(LS_STYLE, currentStyleId);
+      if (state.current) state.current.style = currentStyleId;
+      if (this.seq) this.seq.style = currentStyleId;
+
+      const stage = $("stage");
+      stage.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      stage.innerHTML = "";
+      activeStyle().build(stage);
+      builtStyleId = currentStyleId;
+
+      const phase = this.flat[this.idx];
+      const elapsed = this.paused
+        ? this.pausedAt - this.phaseStart
+        : performance.now() - this.phaseStart;
+      const frac = Math.min(1, Math.max(0, elapsed / this.phaseDur));
+      const eased = -(Math.cos(Math.PI * frac) - 1) / 2; // easeInOutSine
+      const cur = this.phaseFrom + (this.phaseTo - this.phaseFrom) * eased;
+
+      activeStyle().set(stage, cur, 0); // phaseIdx 0 resets stateful styles
+      this.anims = animatePhase({
+        from: cur, to: this.phaseTo,
+        durMs: Math.max(150, this.phaseDur - elapsed),
+        kind: phase.kind, phaseIdx: this.idx,
+      });
+      if (this.paused) this.anims.forEach((a) => a.pause());
+      toast(activeStyle().name);
     },
 
     stop(goHome = true) {
@@ -1075,6 +1150,81 @@
         thanks.hidden = false;
       }));
 
+    // intention: phrase persists; an image becomes the Vision style
+    $("intention-toggle").addEventListener("click", () => {
+      const panel = $("intention-panel");
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) {
+        $("intention-text").value = localStorage.getItem(LS_INTENTION) || "";
+        $("intention-clear").hidden = !localStorage.getItem(LS_VISION);
+        $("intention-text").focus({ preventScroll: true });
+      }
+    });
+    $("intention-text").addEventListener("input", () => {
+      const v = $("intention-text").value.trim().slice(0, 120);
+      if (v) localStorage.setItem(LS_INTENTION, v);
+      else localStorage.removeItem(LS_INTENTION);
+    });
+    $("intention-image").addEventListener("change", () => {
+      const file = $("intention-image").files?.[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        // downscale so the data URI stays comfortably inside localStorage
+        const max = 640;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(img.src);
+        try {
+          localStorage.setItem(LS_VISION, canvas.toDataURL("image/jpeg", 0.82));
+        } catch {
+          toast("That image is too large to keep — try a smaller one");
+          return;
+        }
+        currentStyleId = "vision";
+        localStorage.setItem(LS_STYLE, "vision");
+        if (state.current) state.current.style = "vision";
+        builtStyleId = null; // force the session stage to rebuild with the new image
+        $("intention-clear").hidden = false;
+        renderStylePicker();
+        styleDemo.start($("demo-stage"), demoPace(state.current));
+        toast("Your vision now breathes with you");
+      };
+      img.onerror = () => toast("Couldn't read that image");
+      img.src = URL.createObjectURL(file);
+      $("intention-image").value = "";
+    });
+    $("intention-clear").addEventListener("click", () => {
+      localStorage.removeItem(LS_VISION);
+      $("intention-clear").hidden = true;
+      if (currentStyleId === "vision") {
+        renderStylePicker();
+        styleDemo.start($("demo-stage"), demoPace(state.current));
+      }
+      toast("Image removed");
+    });
+
+    // swipe left/right anywhere on the session screen to change the scenery
+    let swipeStart = null;
+    const sessionScreen = $("screen-session");
+    sessionScreen.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button, input")) return;
+      swipeStart = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    });
+    sessionScreen.addEventListener("pointerup", (e) => {
+      if (!swipeStart || e.pointerId !== swipeStart.id) { swipeStart = null; return; }
+      const dx = e.clientX - swipeStart.x;
+      const dy = e.clientY - swipeStart.y;
+      swipeStart = null;
+      if (Math.abs(dx) > 48 && Math.abs(dx) > 1.8 * Math.abs(dy)) {
+        session.switchStyle(dx < 0 ? 1 : -1);
+      }
+    });
+    sessionScreen.addEventListener("pointercancel", () => { swipeStart = null; });
+
     // builder
     $("new-sequence-btn").addEventListener("click", () => openBuilder(null));
     $("builder-back").addEventListener("click", () => backToHome());
@@ -1127,6 +1277,8 @@
         if (session.running) {
           if (e.code === "Space") { e.preventDefault(); session.paused ? session.resume() : session.pause(); }
           else if (e.code === "Escape") session.stop();
+          else if (e.code === "ArrowRight") { e.preventDefault(); session.switchStyle(1); }
+          else if (e.code === "ArrowLeft") { e.preventDefault(); session.switchStyle(-1); }
           else if (e.key === "m" || e.key === "M") toggleSound();
         } else { // "well done" overlay
           if (e.code === "Space" || e.code === "Enter" || e.code === "ArrowRight") {

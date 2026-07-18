@@ -26,11 +26,11 @@ function check(name, cond) {
     document.getElementById("home-stage").getAnimations({ subtree: true }).length);
   check(`hero demo is breathing (${heroAnims} anims)`, heroAnims > 0);
   const presetCount = await page.locator("#preset-grid .seq-card").count();
-  check(`all presets render (${presetCount})`, presetCount === 11);
+  check(`all presets render (${presetCount})`, presetCount === 18);
 
   // --- moods filter practices
   const moodCount = await page.locator(".mood-chip").count();
-  check(`mood chips render (${moodCount})`, moodCount === 6);
+  check(`mood chips render (${moodCount})`, moodCount === 7);
   await page.locator('.mood-chip:has-text("anxious")').click();
   const filtered = await page.locator("#preset-grid .seq-card").count();
   const deckTitle = await page.textContent("#deck-title");
@@ -42,7 +42,7 @@ function check(name, cond) {
   check("mood note shown", note.length > 10);
   await page.locator('.mood-chip:has-text("anxious")').click(); // deselect
   check("deselect restores all practices",
-    (await page.locator("#preset-grid .seq-card").count()) === 11);
+    (await page.locator("#preset-grid .seq-card").count()) === 18);
 
   // --- home Begin goes straight into a session
   await page.locator("#home-begin").click();
@@ -136,7 +136,7 @@ function check(name, cond) {
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.locator("#preset-grid .seq-card").first().click();
   const styleIds = await page.evaluate(() => window.BreathStyles.map((s) => s.id));
-  check(`11 styles present (${styleIds.length})`, styleIds.length === 11);
+  check(`17 styles present (${styleIds.length})`, styleIds.length === 17);
   for (const id of styleIds) {
     await page.evaluate((sid) => {
       const idx = window.BreathStyles.findIndex((s) => s.id === sid);
@@ -272,6 +272,67 @@ function check(name, cond) {
   await page.waitForSelector("#screen-home.active");
   check("unstar removes from Yours",
     (await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').count()) === 0);
+
+  // --- in-session style switching: arrows + swipe
+  await page.locator("#preset-grid .seq-card").first().click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#screen-session.active");
+  await page.waitForTimeout(600);
+  const styleBefore = await page.evaluate(() => localStorage.getItem("breathz.style"));
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(300);
+  const styleAfter = await page.evaluate(() => localStorage.getItem("breathz.style"));
+  check(`arrow switches style mid-session (${styleBefore} -> ${styleAfter})`, styleAfter !== styleBefore);
+  const stillRunning = await page.evaluate(() =>
+    document.getElementById("stage").getAnimations({ subtree: true }).length);
+  check(`session keeps animating after switch (${stillRunning})`, stillRunning > 0);
+  // swipe left (pointer drag on the stage area)
+  const box = await page.locator("#orb-wrap").boundingBox();
+  await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2, { steps: 6 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  const styleSwiped = await page.evaluate(() => localStorage.getItem("breathz.style"));
+  check(`swipe switches style (${styleAfter} -> ${styleSwiped})`, styleSwiped !== styleAfter);
+  await page.locator("#end-btn").click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+
+  // --- tradition practices + "going deeper" mood
+  check("Sufi Heart Rhythm present",
+    (await page.locator('#preset-grid .seq-card:has-text("Sufi Heart Rhythm")').count()) === 1);
+  check("Nadi Shodhana present",
+    (await page.locator('#preset-grid .seq-card:has-text("Nadi Shodhana")').count()) === 1);
+  await page.locator('.mood-chip:has-text("going deeper")').click();
+  const deepCount = await page.locator("#preset-grid .seq-card").count();
+  check(`going deeper mood filters (${deepCount})`, deepCount === 5);
+  await page.locator('.mood-chip:has-text("going deeper")').click();
+
+  // --- intention: phrase persists, shows in session, travels in links
+  await page.locator("#preset-grid .seq-card").first().click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#intention-toggle").click();
+  check("intention panel opens", await page.locator("#intention-text").isVisible());
+  await page.fill("#intention-text", "calm and clear");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#screen-session.active");
+  const line = await page.textContent("#intention-line");
+  check(`intention shows in session ("${line}")`, line === "calm and clear");
+  await page.locator("#end-btn").click();
+  // shared link with &i=
+  await page.goto(BASE + "/#s=i4-e6&c=3&n=Gift&v=moon&i=you%20are%20safe", { waitUntil: "networkidle" });
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#screen-session.active");
+  check(`shared intention shows ("${await page.textContent("#intention-line")}")`,
+    (await page.textContent("#intention-line")) === "you are safe");
+  await page.locator("#end-btn").click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
 
   // --- pwa bits
   const swCount = await page.evaluate(async () =>

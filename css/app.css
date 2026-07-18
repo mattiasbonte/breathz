@@ -616,6 +616,61 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   min-height: 1.2em;
 }
 
+/* intention */
+.intention-box { margin-top: 26px; }
+
+.intention-panel {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+#intention-text {
+  width: 100%;
+  font-family: inherit;
+  background: rgba(10, 14, 31, 0.5);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  padding: 11px 14px;
+  font-size: 0.95rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.25s;
+}
+#intention-text:focus { border-color: var(--exhale); }
+
+.intention-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.intention-file-btn { cursor: pointer; display: inline-block; }
+
+.intention-help {
+  margin-top: 14px;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  font-weight: 300;
+  line-height: 1.7;
+}
+.intention-help em { color: var(--ink-dim); font-style: normal; }
+
+.intention-line {
+  max-width: min(560px, 84vw);
+  text-align: center;
+  color: var(--ink-dim);
+  font-weight: 300;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  opacity: 0.85;
+}
+
 .preview-actions {
   margin-top: 38px;
   display: flex;
@@ -637,6 +692,7 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   background: radial-gradient(110% 90% at 50% 30%, var(--bg-1) 0%, var(--bg-0) 70%);
 }
 .screen-session.active { display: flex; }
+.screen-session { touch-action: pan-y; } /* keep horizontal swipes for style switching */
 
 .session-stage {
   display: flex;
@@ -892,6 +948,156 @@ body.paused .mandala-layer { animation-play-state: paused; }
   filter: blur(6px);
 }
 
+/* Nebula */
+.nebula-holder { position: absolute; inset: 0; }
+.neb-cloud {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(14px);
+  mix-blend-mode: screen;
+}
+.neb-a {
+  inset: 12%;
+  background: radial-gradient(circle at 38% 40%, rgba(125, 211, 252, 0.5), transparent 65%);
+  animation: spin 44s linear infinite;
+}
+.neb-b {
+  inset: 18%;
+  background: radial-gradient(circle at 62% 55%, rgba(196, 181, 253, 0.5), transparent 62%);
+  animation: spin 61s linear infinite reverse;
+}
+.neb-c {
+  inset: 26%;
+  background: radial-gradient(circle at 50% 65%, rgba(240, 171, 252, 0.45), transparent 60%);
+  animation: spin 83s linear infinite;
+}
+.neb-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #eaf0ff;
+  box-shadow: 0 0 6px rgba(234, 240, 255, 0.9);
+  animation: twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.9; }
+}
+
+/* Aurora veil */
+.veil-holder { position: absolute; inset: 0; overflow: hidden; border-radius: 24px; }
+.veil-bar {
+  position: absolute;
+  top: 8%;
+  height: 84%;
+  width: 15%;
+  border-radius: 999px;
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  animation: veil-sway 7s var(--ease-breath) infinite alternate;
+}
+.veil-0 { left: 8%;  background: linear-gradient(180deg, rgba(103,232,249,0.7), transparent 85%); }
+.veil-1 { left: 26%; background: linear-gradient(180deg, rgba(134,239,172,0.55), transparent 85%); animation-duration: 8.5s; }
+.veil-2 { left: 44%; background: linear-gradient(180deg, rgba(165,180,252,0.65), transparent 85%); animation-duration: 6.2s; }
+.veil-3 { left: 62%; background: linear-gradient(180deg, rgba(240,171,252,0.55), transparent 85%); animation-duration: 9.1s; }
+.veil-4 { left: 80%; background: linear-gradient(180deg, rgba(125,211,252,0.6), transparent 85%); animation-duration: 7.6s; }
+@keyframes veil-sway {
+  from { margin-left: -2.5%; }
+  to   { margin-left: 2.5%; }
+}
+
+/* Flower of Life */
+.fol-holder { position: absolute; inset: 0; }
+.fol-arm { position: absolute; inset: 0; }
+.fol-circle {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 44%; height: 44%;
+  margin: -22% 0 0 -22%;
+  border-radius: 50%;
+  border: 1.5px solid rgba(165, 180, 252, 0.6);
+}
+.fol-center { border-color: rgba(240, 171, 252, 0.55); }
+
+/* Moon */
+.moon-glow {
+  position: absolute; inset: 14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 235, 247, 0.7), transparent 70%);
+  filter: blur(16px);
+}
+.moon-disc {
+  position: absolute; inset: 22%;
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 34% 32%, rgba(255, 255, 255, 0.35), transparent 45%),
+    radial-gradient(circle, #dbe3f5 0%, #aab6d8 70%, #8d99c0 100%);
+  box-shadow: inset -6px -4px 18px rgba(60, 70, 110, 0.5);
+}
+/* craters */
+.moon-disc::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 62% 38%, rgba(120, 132, 168, 0.5) 0 7%, transparent 8%),
+    radial-gradient(circle at 38% 62%, rgba(120, 132, 168, 0.45) 0 5%, transparent 6%),
+    radial-gradient(circle at 55% 70%, rgba(120, 132, 168, 0.4) 0 4%, transparent 5%),
+    radial-gradient(circle at 30% 35%, rgba(120, 132, 168, 0.35) 0 3.5%, transparent 4.5%);
+}
+.moon-shadow {
+  position: absolute; inset: -2%;
+  border-radius: 50%;
+  background: rgba(8, 11, 26, 0.93);
+  will-change: transform;
+}
+
+/* Fireflies */
+.fly-holder { position: absolute; inset: 0; }
+.firefly {
+  position: absolute;
+  border-radius: 50%;
+  background: #fde68a;
+  box-shadow: 0 0 8px rgba(253, 230, 138, 0.9), 0 0 18px rgba(190, 242, 100, 0.4);
+  animation: fly-drift 3.4s var(--ease-breath) infinite alternate,
+             twinkle 1.9s ease-in-out infinite;
+}
+@keyframes fly-drift {
+  from { transform: translateY(6px); }
+  to   { transform: translateY(-10px); }
+}
+.fly-heart {
+  position: absolute; left: 50%; top: 50%;
+  width: 22%; height: 22%;
+  margin: -11% 0 0 -11%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(253, 230, 138, 0.55), transparent 70%);
+  filter: blur(8px);
+}
+
+/* Vision — the user's own image */
+.vision-halo {
+  position: absolute; inset: 4%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(196, 181, 253, 0.45) 30%, rgba(125, 211, 252, 0.2) 55%, transparent 72%);
+  filter: blur(16px);
+}
+.vision-disc {
+  position: absolute; inset: 12%;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(200, 214, 255, 0.35);
+  box-shadow: 0 0 40px rgba(129, 140, 248, 0.25);
+}
+.vision-disc.vision-empty {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 42%),
+    radial-gradient(circle at 50% 55%, rgba(196, 181, 253, 0.5) 0%, rgba(129, 140, 248, 0.45) 55%, rgba(88, 80, 200, 0.4) 100%);
+}
+
+/* pause freezes every style's continuous flourishes too */
+body.paused .stage * { animation-play-state: paused; }
+
 .phase-label {
   font-size: clamp(1.3rem, 4.2vmin, 1.9rem);
   font-weight: 300;
@@ -899,6 +1105,8 @@ body.paused .mandala-layer { animation-play-state: paused; }
   text-transform: lowercase;
   padding-left: 0.5em; /* optically center the letterspaced text */
   color: var(--ink);
+  /* keeps the text readable over bright styles (moon, vision images) */
+  text-shadow: 0 1px 14px rgba(10, 14, 31, 0.7), 0 0 5px rgba(10, 14, 31, 0.55);
   transition: opacity 0.4s;
 }
 
@@ -908,7 +1116,7 @@ body.paused .mandala-layer { animation-play-state: paused; }
   font-weight: 200;
   font-variant-numeric: tabular-nums;
   color: rgba(240, 244, 255, 0.92);
-  text-shadow: 0 1px 12px rgba(10, 14, 31, 0.45);
+  text-shadow: 0 1px 16px rgba(10, 14, 31, 0.75), 0 0 6px rgba(10, 14, 31, 0.55);
 }
 
 .session-info {

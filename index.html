@@ -90,6 +90,22 @@
         <div class="style-demo" aria-hidden="true"><div class="stage" id="demo-stage"></div></div>
         <p class="style-hint" id="style-hint"></p>
       </div>
+
+      <div class="intention-box">
+        <button class="link-btn" id="intention-toggle">set an intention</button>
+        <div class="intention-panel" id="intention-panel" hidden>
+          <input type="text" id="intention-text" maxlength="120" placeholder="I breathe toward…">
+          <div class="intention-actions">
+            <label class="pill-btn intention-file-btn" for="intention-image">add an image</label>
+            <input type="file" id="intention-image" accept="image/*" hidden>
+            <button class="pill-btn" id="intention-clear" hidden>remove image</button>
+          </div>
+          <p class="intention-help">
+            The phrase glows softly during your session and travels with shared links.
+            Your image becomes the <em>Vision</em> animation — a scene to breathe toward. It never leaves this device.
+          </p>
+        </div>
+      </div>
       <div class="preview-actions">
         <button class="primary-btn" id="start-btn">Begin</button>
         <button class="ghost-btn" id="share-btn" title="Copy shareable link">
@@ -115,6 +131,7 @@
           <div class="phase-count" id="phase-count"></div>
         </div>
       </div>
+      <div class="intention-line" id="intention-line" hidden></div>
       <div class="session-info">
         <span id="cycle-indicator"></span>
       </div>
