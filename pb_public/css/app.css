@@ -47,6 +47,11 @@ body {
 
 button, input { touch-action: manipulation; }
 
+/* app-like: no text selection (stops stray selection carets and long-press
+   selection on mobile); inputs stay editable */
+body { -webkit-user-select: none; user-select: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+
 ::selection { background: rgba(125, 211, 252, 0.25); }
 
 /* keyboard focus — visible, calm */
@@ -441,8 +446,15 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   background: rgba(125, 211, 252, 0.08);
 }
 
+.style-demo {
+  position: relative;
+  width: 138px;
+  height: 138px;
+  margin: 24px auto 0;
+}
+
 .style-hint {
-  margin-top: 12px;
+  margin-top: 14px;
   color: var(--ink-faint);
   font-size: 0.8rem;
   font-weight: 300;
@@ -564,15 +576,15 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   width: 58%; height: 58%;
   transform: translate(-50%, -50%);
   border: 1.5px solid rgba(165, 180, 252, 0.55);
-  border-radius: 14%;
+  border-radius: 10px; /* near-sharp so the dot hugs the corners */
 }
 .box-dot {
   position: absolute;
-  left: -7px; top: -7px;
-  width: 14px; height: 14px;
+  left: -7px; top: -7px; /* centers the dot on the border line at corner 0,0 */
+  width: 13px; height: 13px;
   border-radius: 50%;
   background: var(--inhale);
-  box-shadow: 0 0 16px rgba(103, 232, 249, 0.9);
+  box-shadow: 0 0 12px rgba(103, 232, 249, 0.9);
 }
 
 /* Tide */

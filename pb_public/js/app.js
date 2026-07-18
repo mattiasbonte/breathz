@@ -218,6 +218,7 @@
     for (const s of SCREENS) $(`screen-${s}`).classList.toggle("active", s === name);
     document.body.classList.toggle("in-session", name === "session");
     if (name !== "session") document.body.classList.remove("paused");
+    if (name !== "preview") styleDemo.stop();
     // Don't leave focus on a control inside a now-hidden screen — a later
     // Space/Enter would "click" it invisibly.
     const focused = document.activeElement;
@@ -328,6 +329,7 @@
     $("delete-btn").hidden = !own;
     renderStylePicker();
     show("preview");
+    styleDemo.start(); // after show(): the demo stage must be measurable
     $("start-btn").focus({ preventScroll: true });
   }
 
@@ -513,6 +515,60 @@
     },
   };
 
+  // ---------------------------------------------------------- style demo
+  // A little looping breath (in 2.8s, out 2.8s) on the preview screen so you
+  // can see what the selected style feels like before beginning.
+
+  const styleDemo = {
+    timer: 0,
+    anims: [],
+    running: false,
+    level: 0,
+    phaseIdx: 0,
+
+    start() {
+      this.stop();
+      const stage = $("demo-stage");
+      const style = activeStyle();
+      stage.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      stage.innerHTML = "";
+      style.build(stage);
+      this.level = 0;
+      this.phaseIdx = 0;
+      if (reducedMotion.matches) {
+        style.set(stage, 0.7, 0); // static impression, no motion
+        return;
+      }
+      this.running = true;
+      this.tick();
+    },
+
+    tick() {
+      if (!this.running) return;
+      const stage = $("demo-stage");
+      const style = activeStyle();
+      const to = this.level === 0 ? 1 : 0;
+      const DUR = 2800;
+      this.anims.forEach((a) => a.cancel());
+      style.set(stage, this.level, this.phaseIdx);
+      this.anims = style.animate(stage, {
+        from: this.level, to, durMs: DUR,
+        kind: to === 1 ? "inhale" : "exhale",
+        phaseIdx: this.phaseIdx,
+      });
+      this.level = to;
+      this.phaseIdx++;
+      this.timer = setTimeout(() => this.tick(), DUR);
+    },
+
+    stop() {
+      this.running = false;
+      clearTimeout(this.timer);
+      this.anims.forEach((a) => a.cancel());
+      this.anims = [];
+    },
+  };
+
   // ---------------------------------------------------------- style picker
 
   function renderStylePicker() {
@@ -529,6 +585,7 @@
         currentStyleId = s.id;
         localStorage.setItem(LS_STYLE, s.id);
         renderStylePicker();
+        styleDemo.start();
       });
       row.appendChild(btn);
     }

@@ -141,42 +141,35 @@
   const box = {
     id: "box",
     name: "Box Trace",
-    hint: "a light travels the square — one side per phase",
-    _corners: [[0, 0], [1, 0], [1, 1], [0, 1]], // TL TR BR BL, fractions of side
-    _dotPos(stage, corner) {
-      const frame = stage.querySelector(".box-frame");
-      const side = frame.clientWidth;
-      const [cx, cy] = this._corners[corner % 4];
-      return `translate(${cx * side}px, ${cy * side}px)`;
+    hint: "up as you breathe in, across on holds, down on the out",
+    // The dot travels the square's edges with breath-true directions:
+    // inhale climbs a vertical edge, exhale descends one, holds cross
+    // horizontally. Classic box patterns trace a continuous loop; in/out
+    // patterns bounce up and down the same edge like a piston.
+    _x: 0, _y: 1, // current corner, fractions of side (y: 0 = top, 1 = bottom)
+    _pos(stage, x, y) {
+      const side = stage.querySelector(".box-frame").clientWidth;
+      return `translate(${x * side}px, ${y * side}px)`;
     },
-    _frameScale: (lv) => 0.9 + lv * 0.12,
+    _target(kind) {
+      if (kind === "inhale") return { x: this._x, y: 0 };
+      if (kind === "exhale") return { x: this._x, y: 1 };
+      return { x: 1 - this._x, y: this._y };
+    },
     build(stage) {
       const frame = el(stage, "box-frame");
       el(frame, "box-dot");
     },
     set(stage, lv, phaseIdx = 0) {
-      stage.querySelector(".box-frame").style.transform =
-        `translate(-50%, -50%) scale(${this._frameScale(lv)})`;
-      stage.querySelector(".box-dot").style.transform = this._dotPos(stage, phaseIdx);
+      if (phaseIdx === 0) { this._x = 0; this._y = lv > 0.5 ? 0 : 1; }
+      stage.querySelector(".box-dot").style.transform = this._pos(stage, this._x, this._y);
     },
     animate(stage, ctx) {
-      const frame = stage.querySelector(".box-frame");
       const dot = stage.querySelector(".box-dot");
-      const anims = [
-        // the dot always travels one edge per phase — holds included
-        fwd(dot, {
-          transform: [this._dotPos(stage, ctx.phaseIdx), this._dotPos(stage, ctx.phaseIdx + 1)],
-        }, ctx.durMs),
-      ];
-      if (ctx.kind !== "hold") {
-        anims.push(fwd(frame, {
-          transform: [
-            `translate(-50%, -50%) scale(${this._frameScale(ctx.from)})`,
-            `translate(-50%, -50%) scale(${this._frameScale(ctx.to)})`,
-          ],
-        }, ctx.durMs));
-      }
-      return anims;
+      const from = this._pos(stage, this._x, this._y);
+      const t = this._target(ctx.kind);
+      this._x = t.x; this._y = t.y;
+      return [fwd(dot, { transform: [from, this._pos(stage, t.x, t.y)] }, ctx.durMs)];
     },
   };
 
