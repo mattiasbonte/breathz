@@ -1208,7 +1208,18 @@
     window.addEventListener("hashchange", handleSharedHash);
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js").catch(() => {});
+      navigator.serviceWorker.register("sw.js").then((reg) => {
+        // Assets refresh in the background (stale-while-revalidate), so the
+        // first load after a deploy can be one version behind. Say so quietly.
+        reg.addEventListener("updatefound", () => {
+          const worker = reg.installing;
+          worker?.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              toast("breathz was updated — reload when you like");
+            }
+          });
+        });
+      }).catch(() => {});
     }
   }
 

@@ -1,6 +1,8 @@
 /* breathz service worker — precache the app shell so sessions work offline.
    Base-relative so the app can live at any path (domain root or subfolder). */
-const CACHE = "breathz-v3";
+// Bump on every release: the byte change triggers the update flow
+// (install → activate → old caches purged → in-app "updated" toast).
+const CACHE = "breathz-v4";
 const BASE = new URL(".", self.location).pathname; // "/" or "/subpath/"
 const SHELL = [
   "",
