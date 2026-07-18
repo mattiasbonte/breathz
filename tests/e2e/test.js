@@ -27,7 +27,7 @@ function check(name, cond) {
     document.getElementById("home-stage").getAnimations({ subtree: true }).length);
   check(`hero demo is breathing (${heroAnims} anims)`, heroAnims > 0);
   const presetCount = await page.locator("#preset-grid .seq-card").count();
-  check(`all presets render (${presetCount})`, presetCount === 18);
+  check(`all presets render (${presetCount})`, presetCount === 21);
 
   // --- moods filter practices
   const moodCount = await page.locator(".mood-chip").count();
@@ -43,7 +43,7 @@ function check(name, cond) {
   check("mood note shown", note.length > 10);
   await page.locator('.mood-chip:has-text("anxious")').click(); // deselect
   check("deselect restores all practices",
-    (await page.locator("#preset-grid .seq-card").count()) === 18);
+    (await page.locator("#preset-grid .seq-card").count()) === 21);
 
   // --- home Begin goes straight into a session
   await page.locator("#home-begin").click();
@@ -215,7 +215,7 @@ function check(name, cond) {
   const roundtrip = await page.inputValue("#builder-text");
   check("textarea prefilled from sliders", roundtrip.includes("in 4") && roundtrip.includes("cycles: 10"));
   await page.fill("#builder-text", "name: Text Made\ncycles: 3\nin 4\nhold 7\nout 8");
-  check("live summary parses text", (await page.textContent("#builder-summary")).includes("full session"));
+  check("live summary parses text", (await page.textContent("#builder-summary")).includes("cycles"));
   await page.locator("#builder-try").click();
   await page.waitForSelector("#screen-preview.active");
   check("text sequence opens preview", (await page.textContent("#preview-name")) === "Text Made");
@@ -324,7 +324,7 @@ function check(name, cond) {
     (await page.locator('#preset-grid .seq-card:has-text("Nadi Shodhana")').count()) === 1);
   await page.locator('.mood-chip:has-text("going deeper")').click();
   const deepCount = await page.locator("#preset-grid .seq-card").count();
-  check(`going deeper mood filters (${deepCount})`, deepCount === 5);
+  check(`going deeper mood filters (${deepCount})`, deepCount === 7);
   await page.locator('.mood-chip:has-text("going deeper")').click();
 
   // --- intention: phrase persists, shows in session, travels in links
@@ -396,6 +396,50 @@ function check(name, cond) {
   const log = await page.evaluate(() => navigator.clipboard.readText());
   check(`practice log copies (${log.split("\\n").length} lines)`,
     log.startsWith("my breathz practice log") && log.includes("Tiny Test"));
+
+  // --- programs: multi-part sessions with open holds
+  await page.locator('#preset-grid .seq-card:has-text("Power Rounds")').click();
+  await page.waitForSelector("#screen-preview.active");
+  const segChips = await page.locator("#preview-pattern .chip.seg").count();
+  check(`program preview shows parts (${segChips})`, segChips === 9);
+  check("cycles input hidden for programs", await page.locator(".cycles-label").isHidden());
+  const meta = await page.textContent("#preview-duration");
+  check(`program duration estimated (${meta})`, meta.includes("≈"));
+  // program text round-trip
+  await page.locator("#edit-btn").click();
+  await page.waitForSelector("#screen-builder.active");
+  check("program opens in text mode", await page.locator("#builder-text").isVisible());
+  check("visual toggle hidden for programs", await page.locator("#builder-mode-toggle").isHidden());
+  const txt = await page.inputValue("#builder-text");
+  check("program text has part headers and open hold",
+    txt.includes("-- round 1") && txt.includes("hold 60 open"));
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+
+  // open-hold session flow via a tiny shared program link
+  await page.goto(BASE + "/#p=breaths~i0.5-e0.5*2!hold~h30o!close~e0.5&n=Hold%20Test&v=orb",
+    { waitUntil: "networkidle" });
+  await page.waitForSelector("#screen-preview.active");
+  check("program link decodes", (await page.textContent("#preview-name")) === "Hold Test");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#screen-session.active");
+  await page.waitForTimeout(2600); // past part 1 (2s), into the open hold
+  const indicator = await page.textContent("#cycle-indicator");
+  check(`segment title shown ("${indicator}")`, indicator.includes("hold"));
+  check("release button visible", await page.locator("#hold-release").isVisible());
+  const countUp1 = await page.textContent("#phase-count");
+  await page.waitForTimeout(1200);
+  const countUp2 = await page.textContent("#phase-count");
+  check(`open hold counts up (${countUp1} -> ${countUp2})`,
+    /^\d+:\d\d$/.test(countUp2.trim()) && countUp2 !== countUp1);
+  await page.locator("#hold-release").click();
+  await page.waitForSelector("#session-done:not([hidden])", { timeout: 5000 });
+  check("release advances and session completes", true);
+  const doneSummary = await page.textContent("#done-summary");
+  check(`program summary uses parts ("${doneSummary.slice(0, 40)}…")`, doneSummary.includes("parts"));
+  await page.locator("#done-home-btn").click();
+  await page.waitForSelector("#screen-home.active");
 
   // --- pwa bits
   const swCount = await page.evaluate(async () =>

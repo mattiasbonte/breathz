@@ -21,21 +21,12 @@
   const KIND_LABEL = { inhale: "in", hold: "hold", exhale: "out" };
   const KIND_SHORT = { inhale: "in", hold: "hold", exhale: "out" };
 
-  const fmtSecs = (s) => (Number.isInteger(s) ? String(s) : s.toFixed(1));
-  const fmtCycles = (n) => `${n} cycle${n === 1 ? "" : "s"}`;
-
-  function fmtDuration(totalSecs) {
-    const m = Math.floor(totalSecs / 60);
-    const s = Math.round(totalSecs % 60);
-    if (m === 0) return `${s}s`;
-    if (s === 0) return `${m} min`;
-    return `${m} min ${s}s`;
-  }
-
-  function seqDuration(seq) {
-    const cycle = seq.phases.reduce((a, p) => a + p.seconds, 0);
-    return cycle * (seq.cycles || 1);
-  }
+  // pure data logic lives in js/model.js (window.BreathModel)
+  const M = window.BreathModel;
+  const { fmtSecs, fmtCycles, fmtDuration, segmentsOf, isProgram,
+          practiceDuration, practiceMeta, seqToText, textToSeq } = M;
+  const seqDuration = practiceDuration;
+  const validateSequence = M.validatePractice;
 
   function toast(msg) {
     const el = $("toast");
@@ -107,6 +98,38 @@
     { name: "Kumbhaka 1-4-2", style: "triangle", cycles: 5,
       description: "The classical pranayama ratio: hold four times the inhale, exhale twice it. Advanced — build up gently and never strain the hold.",
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 16 }, { kind: "exhale", seconds: 8 }] },
+    { name: "Power Rounds", style: "cosmos",
+      description: "Three rounds of deep rhythmic breathing, each ending in a long hold on empty lungs — release whenever your body asks — and a 15-second recovery hold. Powerful and intense. Only seated or lying down, never in or near water, never while driving. Stop at any strong dizziness.",
+      segments: [
+        { title: "round 1 · 30 deep breaths", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
+        { title: "hold on empty — release when you must", cycles: 1, phases: [{ kind: "hold", seconds: 60, open: true }] },
+        { title: "recovery breath", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 3 }] },
+        { title: "round 2 · 30 deep breaths", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
+        { title: "hold on empty", cycles: 1, phases: [{ kind: "hold", seconds: 75, open: true }] },
+        { title: "recovery breath", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 3 }] },
+        { title: "round 3 · 30 deep breaths", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
+        { title: "final hold on empty", cycles: 1, phases: [{ kind: "hold", seconds: 90, open: true }] },
+        { title: "recovery — rest in the after-glow", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 4 }] },
+      ] },
+    { name: "Deep Hold Ladder", style: "moon",
+      description: "Breath-hold training: easy breathing between progressively longer holds after a full inhale, ending with one open hold for as long as feels comfortable. Builds CO₂ tolerance gently — seated only, never strain, never practice holds in water.",
+      segments: [
+        { title: "settle", cycles: 4, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "hold · 30", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 30 }, { kind: "exhale", seconds: 8 }] },
+        { title: "breathe easy", cycles: 3, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "hold · 45", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 45 }, { kind: "exhale", seconds: 8 }] },
+        { title: "breathe easy", cycles: 3, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "long hold — as long as comfortable", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 60, open: true }, { kind: "exhale", seconds: 8 }] },
+        { title: "soften", cycles: 4, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 8 }] },
+      ] },
+    { name: "Full Journey", style: "veil",
+      description: "A complete session arc: arrive with coherent breathing, deepen with long exhales, find stillness in the square, and return. A ready-made ten-minute class.",
+      segments: [
+        { title: "arrive", cycles: 8, phases: [{ kind: "inhale", seconds: 5.5 }, { kind: "exhale", seconds: 5.5 }] },
+        { title: "deepen", cycles: 12, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "stillness", cycles: 6, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }, { kind: "hold", seconds: 4 }] },
+        { title: "return", cycles: 4, phases: [{ kind: "inhale", seconds: 5.5 }, { kind: "exhale", seconds: 5.5 }] },
+      ] },
   ].map((p) => ({ ...p, source: "preset" }));
 
   // Feeling-based selection. Practices are matched by exact preset name.
@@ -131,7 +154,7 @@
       practices: ["Coherent Breathing", "Equal Breathing", "Ujjayi Pace"] },
     { id: "deep", label: "going deeper",
       note: "Older traditions — yogic, Sufi, shamanic — used breath as a doorway. Take these slowly and seated.",
-      practices: ["Sufi Heart Rhythm", "Nadi Shodhana Pace", "Rhythmic Journey", "Kumbhaka 1-4-2", "Buteyko Soft Breath"] },
+      practices: ["Power Rounds", "Deep Hold Ladder", "Sufi Heart Rhythm", "Nadi Shodhana Pace", "Rhythmic Journey", "Kumbhaka 1-4-2", "Buteyko Soft Breath"] },
   ];
 
   const state = {
@@ -179,33 +202,15 @@
     }
   }
 
-  // ---------------------------------------------------------- validation
-
-  function validateSequence(seq) {
-    if (!seq || !Array.isArray(seq.phases) || seq.phases.length === 0) return "Add at least one phase.";
-    if (seq.phases.length > 12) return "Maximum 12 phases per cycle.";
-    for (const p of seq.phases) {
-      if (!["inhale", "hold", "exhale"].includes(p.kind)) return "Unknown phase type.";
-      if (typeof p.seconds !== "number" || !(p.seconds >= 0.5 && p.seconds <= 120)) {
-        return "Each phase must last between 0.5 and 120 seconds.";
-      }
-    }
-    if (!seq.phases.some((p) => p.kind !== "hold")) return "Add an inhale or exhale.";
-    const cycles = seq.cycles;
-    if (!Number.isInteger(cycles) || cycles < 1 || cycles > 500) return "Cycles must be between 1 and 500.";
-    return null;
-  }
 
   // ---------------------------------------------------------- share links
   // #s=i4-h4-e4-h4&c=10&n=Box%20Breathing&v=orb — the whole experience in a URL.
 
   function encodeShare(seq) {
-    const s = seq.phases.map((p) => p.kind[0] + fmtSecs(p.seconds)).join("-");
-    let hash = `#s=${s}&c=${seq.cycles}`;
-    if (seq.name) hash += `&n=${encodeURIComponent(seq.name)}`;
-    hash += `&v=${seq.style || currentStyleId}`;
-    const intention = seq.intention ?? localStorage.getItem(LS_INTENTION);
-    if (intention) hash += `&i=${encodeURIComponent(intention)}`;
+    const hash = M.encodeShare(seq, {
+      style: seq.style || currentStyleId,
+      intention: seq.intention ?? localStorage.getItem(LS_INTENTION) ?? undefined,
+    });
     return `${window.location.origin}${window.location.pathname}${hash}`;
   }
 
@@ -214,31 +219,7 @@
   }
 
   function decodeShare(hash) {
-    try {
-      const params = new URLSearchParams(hash.replace(/^#/, ""));
-      const s = params.get("s");
-      if (!s) return null;
-      const kinds = { i: "inhale", h: "hold", e: "exhale" };
-      const phases = s.split("-").map((tok) => {
-        const kind = kinds[tok[0]];
-        const seconds = parseFloat(tok.slice(1));
-        if (!kind || !isFinite(seconds)) throw new Error("bad token");
-        return { kind, seconds: Math.round(seconds * 10) / 10 };
-      });
-      const cycles = Math.min(500, Math.max(1, parseInt(params.get("c") || "10", 10) || 10));
-      const seq = {
-        name: params.get("n") || "Shared sequence",
-        description: "Opened from a shared link.",
-        phases, cycles, source: "link",
-      };
-      if (validateSequence(seq)) return null;
-      seq.style = validStyleId(params.get("v"));
-      const intention = params.get("i");
-      if (intention) seq.intention = intention.slice(0, 120);
-      const by = params.get("by");
-      if (by) seq.by = by.slice(0, 60);
-      return seq;
-    } catch { return null; }
+    return M.decodeShare(hash, validStyleId);
   }
 
   // ---------------------------------------------------------- audio cues
@@ -391,8 +372,9 @@
   // real pace when one is given.
 
   function demoPace(seq) {
-    const inS = seq?.phases?.find((p) => p.kind === "inhale")?.seconds || 3;
-    const outS = seq?.phases?.find((p) => p.kind === "exhale")?.seconds || 3;
+    const first = seq ? segmentsOf(seq)[0].phases : [];
+    const inS = first.find((p) => p.kind === "inhale")?.seconds || 3;
+    const outS = first.find((p) => p.kind === "exhale")?.seconds || 3;
     return { inMs: Math.min(inS, 8) * 1000, outMs: Math.min(outS, 8) * 1000 };
   }
 
@@ -480,11 +462,19 @@
     return `<span class="chip ${p.kind}">${KIND_SHORT[p.kind]} ${fmtSecs(p.seconds)}</span>`;
   }
 
+  function patternHTML(seq) {
+    const segs = segmentsOf(seq);
+    if (segs.length === 1) return segs[0].phases.map(chipHTML).join("");
+    return segs.map((s) =>
+      `<span class="chip seg">${escapeHTML(s.title || `${s.phases.length}-phase part`)}</span>`
+    ).join("");
+  }
+
   function cardHTML(seq) {
     return `
       <h3>${escapeHTML(seq.name)}</h3>
-      <div class="pattern">${seq.phases.map(chipHTML).join("")}</div>
-      <div class="meta">${fmtCycles(seq.cycles)} · ${fmtDuration(seqDuration(seq))}</div>`;
+      <div class="pattern">${patternHTML(seq)}</div>
+      <div class="meta">${practiceMeta(seq)}</div>`;
   }
 
   function escapeHTML(s) {
@@ -496,7 +486,7 @@
   function renderHomeHero() {
     const seq = homeSeq();
     $("home-seq-name").textContent = seq.name;
-    $("home-seq-meta").textContent = `${fmtCycles(seq.cycles)} · ${fmtDuration(seqDuration(seq))}`;
+    $("home-seq-meta").textContent = practiceMeta(seq);
   }
 
   function startHomeDemo() {
@@ -637,15 +627,16 @@
   // ---------------------------------------------------------- preview
 
   function openPreview(seq) {
-    state.current = { ...seq, phases: seq.phases.map((p) => ({ ...p })) };
+    state.current = structuredClone(seq);
     // each practice opens in its natural animation; the picker still overrides
     if (validStyleId(seq.style)) currentStyleId = seq.style;
     $("preview-name").textContent = seq.name;
     $("preview-by").textContent = seq.by ? `prepared for you by ${seq.by}` : "";
     $("preview-by").hidden = !seq.by;
     $("preview-desc").textContent = seq.description || "";
-    $("preview-pattern").innerHTML = seq.phases.map(chipHTML).join("");
-    $("preview-cycles").value = seq.cycles;
+    $("preview-pattern").innerHTML = patternHTML(seq);
+    document.querySelector(".cycles-label").hidden = isProgram(seq);
+    if (!isProgram(seq)) $("preview-cycles").value = segmentsOf(seq)[0].cycles;
     updatePreviewDuration();
     $("edit-btn").hidden = false; // editing a preset saves a personal copy
     $("delete-btn").hidden = seq.source !== "local";
@@ -668,11 +659,12 @@
   }
 
   function updatePreviewDuration() {
-    const c = parseInt($("preview-cycles").value, 10);
-    if (state.current && Number.isInteger(c) && c >= 1) {
-      state.current.cycles = Math.min(500, c);
-      $("preview-duration").textContent = `≈ ${fmtDuration(seqDuration(state.current))}`;
+    if (!state.current) return;
+    if (!isProgram(state.current)) {
+      const c = parseInt($("preview-cycles").value, 10);
+      if (Number.isInteger(c) && c >= 1) state.current.cycles = Math.min(500, c);
     }
+    $("preview-duration").textContent = `≈ ${fmtDuration(seqDuration(state.current))}`;
   }
 
   // ---------------------------------------------------------- session engine
@@ -697,15 +689,24 @@
         currentStyleId = seq.style;
         localStorage.setItem(LS_STYLE, seq.style);
       }
-      localStorage.setItem(LS_LAST, JSON.stringify({
+      const snap = {
         name: seq.name, description: seq.description || "",
-        phases: seq.phases, cycles: seq.cycles, source: seq.source,
-        style: seq.style || currentStyleId,
-      }));
+        source: seq.source, style: seq.style || currentStyleId,
+      };
+      if (seq.segments) snap.segments = seq.segments;
+      else { snap.phases = seq.phases; snap.cycles = seq.cycles; }
+      localStorage.setItem(LS_LAST, JSON.stringify(snap));
+      // flatten parts × cycles × phases into one timeline
       this.flat = [];
-      for (let c = 0; c < seq.cycles; c++) {
-        for (const p of seq.phases) this.flat.push({ ...p, cycle: c + 1 });
-      }
+      const segs = segmentsOf(seq);
+      segs.forEach((seg, segIdx) => {
+        const cycles = seg.cycles || 1;
+        for (let c = 0; c < cycles; c++) {
+          for (const p of seg.phases) {
+            this.flat.push({ ...p, cycle: c + 1, cycles, segIdx, segCount: segs.length, segTitle: seg.title });
+          }
+        }
+      });
       this.idx = 0;
       this.level = 0;
       this.running = true;
@@ -753,11 +754,12 @@
                    : this.level;
 
       $("phase-label").textContent = KIND_LABEL[phase.kind];
-      $("cycle-indicator").textContent = `cycle ${phase.cycle} of ${this.seq.cycles}`;
+      $("cycle-indicator").textContent = this.phaseIndicator(phase);
+      $("hold-release").hidden = !phase.open;
       audio.cue(phase.kind);
       haptics.pulse(phase.kind);
 
-      this.phaseDur = phase.seconds * 1000;
+      this.phaseDur = phase.open ? Infinity : phase.seconds * 1000;
       this.phaseStart = performance.now();
       this.phaseFrom = this.level;
       this.phaseTo = target;
@@ -768,24 +770,46 @@
       activeStyle().set($("stage"), this.level, this.idx);
       this.anims = animatePhase({
         from: this.level, to: target,
-        durMs: this.phaseDur, kind: phase.kind, phaseIdx: this.idx,
+        durMs: phase.open ? 4000 : this.phaseDur, kind: phase.kind, phaseIdx: this.idx,
       });
       this.level = target;
+      this.tickLoop();
+    },
 
+    phaseIndicator(phase) {
+      if (phase.segCount > 1) {
+        const t = phase.segTitle || `part ${phase.segIdx + 1} of ${phase.segCount}`;
+        return phase.cycles > 1 ? `${t} · ${phase.cycle} of ${phase.cycles}` : t;
+      }
+      return `cycle ${phase.cycle} of ${phase.cycles}`;
+    },
+
+    // one countdown loop for phases and open holds alike (open holds count up)
+    tickLoop() {
       cancelAnimationFrame(this.raf);
       const tick = () => {
         if (!this.running || this.paused) return;
+        const phase = this.flat[this.idx];
         const elapsed = performance.now() - this.phaseStart;
-        const remain = Math.max(0, this.phaseDur - elapsed);
-        $("phase-count").textContent = Math.ceil(remain / 1000);
-        if (elapsed >= this.phaseDur) {
-          this.idx++;
-          this.runPhase();
+        if (phase.open) {
+          const s = Math.floor(elapsed / 1000);
+          $("phase-count").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
         } else {
-          this.raf = requestAnimationFrame(tick);
+          $("phase-count").textContent = Math.ceil(Math.max(0, this.phaseDur - elapsed) / 1000);
+          if (elapsed >= this.phaseDur) { this.idx++; this.runPhase(); return; }
         }
+        this.raf = requestAnimationFrame(tick);
       };
       this.raf = requestAnimationFrame(tick);
+    },
+
+    // ends the current open hold (tap on the stage, Space, or the release button)
+    releaseHold() {
+      if (!this.running || !this.flat[this.idx]?.open) return;
+      if (this.paused) this.resume();
+      haptics.pulse("exhale");
+      this.idx++;
+      this.runPhase();
     },
 
     pause() {
@@ -809,19 +833,7 @@
       $("pause-btn").textContent = "Pause";
       $("phase-label").textContent = KIND_LABEL[this.flat[this.idx].kind];
       wakeLock.acquire();
-      const tick = () => {
-        if (!this.running || this.paused) return;
-        const elapsed = performance.now() - this.phaseStart;
-        const remain = Math.max(0, this.phaseDur - elapsed);
-        $("phase-count").textContent = Math.ceil(remain / 1000);
-        if (elapsed >= this.phaseDur) {
-          this.idx++;
-          this.runPhase();
-        } else {
-          this.raf = requestAnimationFrame(tick);
-        }
-      };
-      this.raf = requestAnimationFrame(tick);
+      this.tickLoop();
     },
 
     // Switch the animation style while breathing (swipe / arrow keys). The
@@ -859,7 +871,7 @@
       activeStyle().set(stage, cur, 0); // phaseIdx 0 resets stateful styles
       this.anims = animatePhase({
         from: cur, to: this.phaseTo,
-        durMs: Math.max(150, this.phaseDur - elapsed),
+        durMs: phase.open ? 4000 : Math.max(150, this.phaseDur - elapsed),
         kind: phase.kind, phaseIdx: this.idx,
       });
       if (this.paused) this.anims.forEach((a) => a.pause());
@@ -875,6 +887,7 @@
       this.anims.forEach((a) => a.cancel());
       this.anims = [];
       wakeLock.release();
+      $("hold-release").hidden = true;
       document.body.classList.remove("paused");
       // openPreview repopulates the whole screen — required when the session
       // was started straight from home and the preview was never rendered.
@@ -887,11 +900,11 @@
       this.anims.forEach((a) => a.cancel());
       this.anims = [];
       wakeLock.release();
-      journalAdd({ t: Date.now(), seq: this.seq.name, cycles: this.seq.cycles });
+      $("hold-release").hidden = true;
+      journalAdd({ t: Date.now(), seq: this.seq.name, detail: practiceMeta(this.seq) });
       const n = journal().length;
-      const total = fmtDuration(seqDuration(this.seq));
       $("done-summary").textContent =
-        `${fmtCycles(this.seq.cycles)} of ${this.seq.name} — about ${total} of mindful breathing.` +
+        `${this.seq.name} — ${practiceMeta(this.seq)} of mindful breathing.` +
         (n > 1 ? ` Breath session #${n}.` : "");
       $("mood-row").hidden = false;
       $("mood-thanks").hidden = true;
@@ -900,92 +913,6 @@
     },
   };
 
-  // ---------------------------------------------------------- text format
-  // A forgiving plain-text sequence format, so sessions can be written or
-  // generated as text and pasted in. Accepted in one textarea:
-  //   name: Evening wind-down       (optional)
-  //   cycles: 8                     (optional)
-  //   in 4 / hold 7 / out 8         (one phase per line; i/h/e work too)
-  // …or a JSON object, or a compact pattern: "i4-h7-e8", or bare "4-7-8"
-  // (2 numbers = in-out, 3 = in-hold-out, 4 = in-hold-out-hold).
-
-  const TEXT_KINDS = {
-    i: "inhale", in: "inhale", inhale: "inhale",
-    h: "hold", hold: "hold", pause: "hold",
-    e: "exhale", ex: "exhale", out: "exhale", exhale: "exhale",
-  };
-  const BARE_PATTERNS = {
-    2: ["inhale", "exhale"],
-    3: ["inhale", "hold", "exhale"],
-    4: ["inhale", "hold", "exhale", "hold"],
-  };
-
-  function seqToText(seq) {
-    const lines = [`name: ${seq.name || "My sequence"}`, `cycles: ${seq.cycles}`, ""];
-    for (const p of seq.phases) lines.push(`${KIND_SHORT[p.kind]} ${fmtSecs(p.seconds)}`);
-    return lines.join("\n");
-  }
-
-  function parsePattern(line) {
-    const toks = line.split("-").map((t) => t.trim());
-    const parsed = [];
-    for (const t of toks) {
-      const m = t.match(/^([a-z]+)?\s*(\d+(?:\.\d+)?)$/i);
-      if (!m) return null;
-      const kind = m[1] ? TEXT_KINDS[m[1].toLowerCase()] : null;
-      if (m[1] && !kind) return null;
-      parsed.push({ kind, seconds: Math.round(parseFloat(m[2]) * 10) / 10 });
-    }
-    if (parsed.every((p) => p.kind)) return parsed;
-    if (parsed.every((p) => !p.kind) && BARE_PATTERNS[parsed.length]) {
-      return parsed.map((p, i) => ({ kind: BARE_PATTERNS[parsed.length][i], seconds: p.seconds }));
-    }
-    return null;
-  }
-
-  function textToSeq(text) {
-    text = (text || "").trim();
-    if (!text) return { error: "Nothing to read yet." };
-
-    if (text.startsWith("{")) {
-      try {
-        const o = JSON.parse(text);
-        const seq = {
-          name: String(o.name || "My sequence").slice(0, 100),
-          cycles: parseInt(o.cycles, 10) || 10,
-          phases: (Array.isArray(o.phases) ? o.phases : []).map((p) => ({
-            kind: TEXT_KINDS[String(p.kind || "").toLowerCase()],
-            seconds: Math.round(Number(p.seconds) * 10) / 10,
-          })),
-        };
-        const err = validateSequence(seq);
-        return err ? { error: err } : { seq };
-      } catch { return { error: "That JSON doesn't parse." }; }
-    }
-
-    const seq = { name: "My sequence", cycles: 10, phases: [] };
-    let sawName = false;
-    for (const raw of text.split(/\r?\n/)) {
-      const line = raw.trim();
-      if (!line || line.startsWith("#")) continue;
-      let m;
-      if ((m = line.match(/^name\s*:\s*(.+)$/i))) { seq.name = m[1].trim().slice(0, 100); sawName = true; continue; }
-      if ((m = line.match(/^cycles\s*:\s*(\d+)\s*$/i))) { seq.cycles = parseInt(m[1], 10); continue; }
-      if ((m = line.match(/^([a-z]+)[\s:]+(\d+(?:\.\d+)?)\s*(?:s(?:ec(?:onds)?)?)?$/i)) && TEXT_KINDS[m[1].toLowerCase()]) {
-        seq.phases.push({ kind: TEXT_KINDS[m[1].toLowerCase()], seconds: Math.round(parseFloat(m[2]) * 10) / 10 });
-        continue;
-      }
-      const pattern = parsePattern(line);
-      if (pattern) { seq.phases.push(...pattern); continue; }
-      return { error: `Can't read this line: “${line}”` };
-    }
-    if (!sawName && seq.phases.length) {
-      const secs = seq.phases.map((p) => fmtSecs(p.seconds)).join("-");
-      seq.name = secs.length <= 20 ? `${secs} breath` : "My sequence";
-    }
-    const err = validateSequence(seq);
-    return err ? { error: err } : { seq };
-  }
 
   // ---------------------------------------------------------- builder
 
@@ -1001,6 +928,11 @@
     if (mode === "visual" && builderMode === "text") {
       const r = textToSeq($("builder-text").value);
       if (r.error) { $("builder-error").textContent = r.error; return; } // stay in text mode
+      if (M.isProgram(r.seq)) {
+        $("builder-error").textContent = "Multi-part sessions are edited as text.";
+        return;
+      }
+      delete state.editing.segments;
       Object.assign(state.editing, r.seq);
       $("builder-name").value = state.editing.name;
       $("builder-cycles").value = state.editing.cycles;
@@ -1016,17 +948,27 @@
 
   function openBuilder(seq) {
     state.editing = seq
-      ? { ...seq, phases: seq.phases.map((p) => ({ ...p })) }
+      ? structuredClone(seq)
       : { name: "", phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }], cycles: 10, source: "adhoc" };
     $("builder-title").textContent = seq ? "Shape this sequence" : "Create a sequence";
-    $("builder-name").value = state.editing.name || "";
-    $("builder-cycles").value = state.editing.cycles;
     $("builder-error").textContent = "";
     $("builder-note").textContent = "Sequences are saved in this browser — share one as a link to keep it anywhere.";
-    builderMode = "visual";
-    $("builder-visual").hidden = false;
-    $("builder-text-field").hidden = true;
+    const program = isProgram(state.editing);
+    $("builder-mode-toggle").hidden = program;
+    builderMode = program ? "text" : "visual";
+    $("builder-visual").hidden = program;
+    $("builder-text-field").hidden = !program;
     $("builder-mode-toggle").textContent = "edit as text";
+    if (program) {
+      // multi-part sessions live in the text editor — parts, cycles, open holds
+      $("builder-text").value = seqToText(state.editing);
+      updateBuilderSummary();
+      show("builder");
+      $("builder-text").focus({ preventScroll: true });
+      return;
+    }
+    $("builder-name").value = state.editing.name || "";
+    $("builder-cycles").value = state.editing.cycles;
     renderPhaseRows();
     show("builder");
     $("builder-name").focus({ preventScroll: true });
@@ -1058,6 +1000,10 @@
   }
 
   function updateBuilderSummary() {
+    if (isProgram(state.editing)) {
+      $("builder-summary").textContent = practiceMeta(state.editing);
+      return;
+    }
     const cycles = parseInt($("builder-cycles").value, 10) || 1;
     state.editing.cycles = Math.min(500, Math.max(1, cycles));
     const dur = seqDuration(state.editing);
@@ -1071,6 +1017,7 @@
     if (builderMode === "text") {
       const r = textToSeq($("builder-text").value);
       if (r.error) { $("builder-error").textContent = r.error; return null; }
+      delete seq.phases; delete seq.cycles; delete seq.segments;
       Object.assign(seq, r.seq);
       return seq;
     }
@@ -1139,7 +1086,7 @@
       const seq = homeSeq();
       const err = validateSequence(seq);
       if (err) { toast(err); return; }
-      session.start({ ...seq, phases: seq.phases.map((p) => ({ ...p })) });
+      session.start(structuredClone(seq));
     });
     $("home-customize").addEventListener("click", () => openPreview(homeSeq()));
 
@@ -1181,6 +1128,7 @@
 
     // session
     $("pause-btn").addEventListener("click", () => session.paused ? session.resume() : session.pause());
+    $("hold-release").addEventListener("click", () => session.releaseHold());
     $("end-btn").addEventListener("click", () => session.stop());
     $("again-btn").addEventListener("click", () => session.start(state.current));
     $("done-home-btn").addEventListener("click", () => backToHome(false));
@@ -1269,7 +1217,7 @@
     $("copy-log").addEventListener("click", async () => {
       const lines = journal().map((e) => {
         const d = new Date(e.t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-        return `${d} — ${e.seq}, ${fmtCycles(e.cycles)}${e.mood ? ` — felt ${e.mood}` : ""}`;
+        return `${d} — ${e.seq}, ${e.detail || fmtCycles(e.cycles)}${e.mood ? ` — felt ${e.mood}` : ""}`;
       });
       const text = `my breathz practice log\n${lines.join("\n")}`;
       try { await navigator.clipboard.writeText(text); toast("Practice log copied"); }
@@ -1290,6 +1238,10 @@
       swipeStart = null;
       if (Math.abs(dx) > 48 && Math.abs(dx) > 1.8 * Math.abs(dy)) {
         session.switchStyle(dx < 0 ? 1 : -1);
+      } else if (Math.abs(dx) < 12 && Math.abs(dy) < 12 &&
+                 session.running && !session.paused && !session.preRolling &&
+                 session.flat[session.idx]?.open) {
+        session.releaseHold();
       }
     });
     sessionScreen.addEventListener("pointercancel", () => { swipeStart = null; });
@@ -1322,9 +1274,7 @@
         $("builder-summary").textContent = "";
       } else {
         $("builder-error").textContent = "";
-        const dur = seqDuration(r.seq);
-        $("builder-summary").textContent =
-          `One cycle: ${fmtDuration(dur / r.seq.cycles)} · full session: ${fmtDuration(dur)}`;
+        $("builder-summary").textContent = practiceMeta(r.seq);
       }
     });
 
@@ -1344,7 +1294,11 @@
       if (screen === "session") {
         if (onButton) return;
         if (session.running) {
-          if (e.code === "Space") { e.preventDefault(); session.paused ? session.resume() : session.pause(); }
+          if (e.code === "Space") {
+            e.preventDefault();
+            if (!session.paused && !session.preRolling && session.flat[session.idx]?.open) session.releaseHold();
+            else session.paused ? session.resume() : session.pause();
+          }
           else if (e.code === "Escape") session.stop();
           else if (e.code === "ArrowRight") { e.preventDefault(); session.switchStyle(1); }
           else if (e.code === "ArrowLeft") { e.preventDefault(); session.switchStyle(-1); }

@@ -2,13 +2,14 @@
    Base-relative so the app can live at any path (domain root or subfolder). */
 // Bump on every release: the byte change triggers the update flow
 // (install → activate → old caches purged → in-app "updated" toast).
-const CACHE = "breathz-v9";
+const CACHE = "breathz-v10";
 const BASE = new URL(".", self.location).pathname; // "/" or "/subpath/"
 const SHELL = [
   "",
   "index.html",
   "css/app.css",
   "js/app.js",
+  "js/model.js",
   "js/styles.js",
   "manifest.webmanifest",
   "icons/favicon.svg",
