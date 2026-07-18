@@ -1,12 +1,13 @@
 # E2E tests
 
-Headless-browser tests covering the full user journey: presets, preview, session
-(start/pause/resume/end), builder, guest saves, share links, signup, account CRUD,
-sign-out and the service worker.
+Playwright suite covering the whole app: breathing-first home, mood-based
+selection, sessions (start/pause/resume/finish), mood journal, builder,
+share links (pattern + style), per-practice default animations, all 11
+styles, keyboard navigation, service worker, and 320px mobile layout.
 
 ```sh
-# terminal 1 — a throwaway server (use a scratch data dir, tests create users)
-go build -o /tmp/breathz . && /tmp/breathz serve --dir /tmp/breathz-data --http 127.0.0.1:8931
+# terminal 1 — serve the repo root
+python3 -m http.server 8931
 
 # terminal 2
 cd tests/e2e && npm install && npm test

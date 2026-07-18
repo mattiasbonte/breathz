@@ -1,116 +1,57 @@
 # breathz
 
-A calm, configurable breathing companion for breathwork sessions. Box breathing, 4-7-8, coherent breathing — or any rhythm you design yourself.
+A calm, minimalist breathing companion. Pick how you feel, press Begin, breathe.
 
-**One binary. One port. Your server.**
+**Pure static web app.** No backend, no accounts, no tracking. Your sequences live in your browser; sharing happens through URLs.
 
-## Features
+## What it does
 
-- **8 preset practices** — box breathing, 4-7-8, coherent breathing, triangle, extended exhale, and more, seeded automatically on first run.
-- **Custom sequences** — compose any pattern of inhale / hold / exhale phases (0.5–120 s each, up to 12 phases, up to 500 cycles).
-- **Beautiful, distraction-free sessions** — a breathing orb animated on the compositor thread (60 fps, battery-friendly), aurora backdrop, optional soft audio cues.
-- **Shareable links** — every sequence encodes into a URL (`/#s=i4-h7-e8&c=6&n=Wind%20down`) you can hand to anyone. No account needed to open one.
-- **Works without an account** — sequences save to the device; sign up later and move them to your account in one tap.
-- **Auth & sync** — email/password accounts via PocketBase; your sequences follow you across devices.
-- **PWA** — installable, offline-capable app shell, screen wake lock keeps the display on during sessions, `prefers-reduced-motion` respected.
-- **Admin UI** — manage users and preset sequences at `/_/` (PocketBase dashboard).
+- **Breathing-first home** — the app is already breathing when you arrive. One tap starts your last practice.
+- **Feeling-based selection** — "how are you feeling?" (anxious, stressed, can't sleep, low energy, unfocused, balanced) surfaces the right techniques with a note on why they work.
+- **11 evidence-informed practices** — box breathing, 4-7-8, physiological sigh, coherent breathing, extended exhale, 2:1 sleep breathing, triangle, equal breathing, wind-down, ujjayi pace, energize.
+- **11 animation styles** — each practice opens in its natural visual (box traces a square, triangle a triangle, ujjayi is an ocean tide…) and every one can be changed: Orb, Ripples, Bloom, Box Trace, Triangle, Tide, Starfield, Sway, Mandala, Column, Beacon. A live demo previews the style before you begin.
+- **Fully custom sequences** — any pattern of inhale / hold / exhale phases, saved in the browser.
+- **Everything shareable via URL** — a link like `/#s=i4-h7-e8&c=6&n=Wind%20down&v=bloom` carries the pattern, cycles, name *and* animation style. Hand it to a client or friend; it opens ready to breathe, no install, no account.
+- **Made for practice** — soft audio cues, optional vibration on phase changes (eyes-closed friendly), screen wake lock, full keyboard control, `prefers-reduced-motion` respected, session log with a gentle mood check-in (stored locally only).
+- **Installable PWA** — works offline once visited.
 
-## Quick start
+## Run it locally
 
-Requires Go 1.24+.
-
-```sh
-git clone <this-repo> breathz
-cd breathz
-go build -o breathz .
-./breathz serve --http 0.0.0.0:8090
-```
-
-Open `http://localhost:8090`. That's it — migrations run automatically, presets are seeded, data lives in `./pb_data/` (SQLite).
-
-Create the admin (superuser) account for the `/_/` dashboard:
+It's static files — any web server works:
 
 ```sh
-./breathz superuser upsert you@example.com <a-strong-password>
+git clone <this-repo> breathz && cd breathz
+python3 -m http.server 8080
+# open http://localhost:8080
 ```
 
-### Development
+## Deploy for free
 
-Serve the frontend from disk instead of the embedded copy, so edits show up on refresh:
+The repo root is the site. Any static host works; these have free tiers with HTTPS and custom domains:
 
-```sh
-BREATHZ_PUBLIC_DIR=./pb_public go run . serve
-```
+- **Cloudflare Pages** — connect the repo (build command: none, output dir: `/`), or drag-and-drop the folder. Recommended.
+- **Netlify** — same: no build step, publish directory `/`.
+- **GitHub Pages** — serve the root from the `main` branch. Use a user site or custom domain so the app lives at the domain root (asset paths are absolute).
 
-## Deploying on your own server
+HTTPS comes with all three — needed for the wake lock, clipboard sharing, and PWA install.
 
-The binary is fully self-contained (frontend embedded). A minimal production setup:
+## For practitioners
 
-**1. Build & copy** (cross-compile if your server's arch differs):
-
-```sh
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o breathz .
-scp breathz you@server:/opt/breathz/
-```
-
-**2. systemd unit** — `/etc/systemd/system/breathz.service`:
-
-```ini
-[Unit]
-Description=breathz breathing app
-After=network.target
-
-[Service]
-User=breathz
-WorkingDirectory=/opt/breathz
-ExecStart=/opt/breathz/breathz serve --http 127.0.0.1:8090
-Restart=on-failure
-LimitNOFILE=4096
-
-[Install]
-WantedBy=multi-user.target
-```
-
-**3. Reverse proxy with auto-TLS** — Caddyfile:
-
-```
-breathz.example.com {
-    reverse_proxy 127.0.0.1:8090
-}
-```
-
-HTTPS matters beyond security: the wake lock API, clipboard sharing, and PWA install all require a secure context.
-
-**4. Backups** — in the admin UI (`/_/` → Settings → Backups) enable scheduled backups, optionally to any S3-compatible bucket (e.g. Cloudflare R2). Everything lives in `pb_data/`.
-
-### Upgrading
-
-Pull, rebuild, restart the service. New migrations apply automatically on start. PocketBase is pre-1.0 — read its release notes before bumping the dependency.
+Build a sequence (or customize a preset), pick the animation that suits the exercise, press **Share**. The link you send opens directly into that exact experience. Nothing to install, nothing to sign up for — it also keeps working offline after the first visit.
 
 ## Architecture
 
 ```
-main.go            PocketBase embedded as a Go framework; pb_public embedded via go:embed
-migrations/        1: sequences collection + API access rules   2: seed presets
-pb_public/         static frontend — no build step, no framework
-  js/app.js        session engine (WAAPI), builder, auth, share links, wake lock, audio
-  css/app.css      design system; continuous animations touch only transform/opacity
-  sw.js            offline app shell (never intercepts /api/ or /_/)
-docs/              market research & tech stack decisions
+index.html            single page, four screens (home / preview / session / builder)
+js/app.js             practices, moods, session engine, share links, journal
+js/styles.js          the 11 breathing visuals (build/set/animate contract)
+css/app.css           design system; continuous animations touch only transform/opacity
+sw.js                 offline app shell
+tests/e2e/            Playwright suite (serve root on :8931, then `npm test`)
+docs/                 market & tech research from the incubation phase
 ```
 
-**Data model** — one `sequences` collection:
-
-| field | type | notes |
-|---|---|---|
-| name | text | required, ≤100 chars |
-| description | text | ≤500 chars |
-| phases | json | `[{"kind":"inhale"\|"hold"\|"exhale","seconds":4}]` |
-| cycles | number | 1–500 |
-| is_preset | bool | presets are global, owned by no one |
-| owner | relation → users | cascade delete |
-
-API rules enforce: anyone reads presets, users read/write only their own sequences, nobody but admins touches presets.
+No framework, no build step, no dependencies. Animations run on the compositor thread (Web Animations API, transform/opacity only) for 60 fps and low battery drain.
 
 ## License
 

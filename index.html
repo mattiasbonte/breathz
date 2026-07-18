@@ -21,24 +21,37 @@
   <header class="topbar" id="topbar">
     <a class="brand" href="/" id="brand-link">breathz</a>
     <nav class="topbar-actions">
-      <button class="ghost-btn" id="sound-toggle" aria-pressed="false" title="Sound cues">
+      <button class="ghost-btn icon-btn" id="sound-toggle" aria-pressed="false" title="Sound cues">
         <svg class="icon icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg>
         <svg class="icon icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>
       </button>
-      <button class="ghost-btn" id="auth-btn">Sign in</button>
+      <button class="ghost-btn icon-btn" id="haptics-toggle" aria-pressed="false" title="Vibration on phase change" hidden>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="4" width="6" height="16" rx="2"/><path d="M5 9v6"/><path d="M19 9v6"/><path d="M2 11v2"/><path d="M22 11v2"/></svg>
+      </button>
     </nav>
   </header>
 
   <!-- ============ HOME ============ -->
   <main class="screen screen-home active" id="screen-home">
-    <section class="hero">
-      <h1>Breathe with intention</h1>
-      <p class="hero-sub">Pick a practice or shape your own rhythm.<br>No account, no noise — just breath.</p>
+    <section class="hero-breathe">
+      <div class="home-stage-wrap" aria-hidden="true"><div class="stage" id="home-stage"></div></div>
+      <h1 class="home-seq-name" id="home-seq-name">Box Breathing</h1>
+      <p class="home-seq-meta" id="home-seq-meta"></p>
+      <div class="preview-actions home-actions">
+        <button class="primary-btn" id="home-begin">Begin</button>
+        <button class="ghost-btn" id="home-customize">Customize</button>
+      </div>
+    </section>
+
+    <section class="mood-picker" aria-label="How are you feeling?">
+      <h2 class="mood-title">how are you feeling?</h2>
+      <div class="mood-chip-row" id="mood-chip-row"></div>
+      <p class="mood-note" id="mood-note"></p>
     </section>
 
     <section class="deck" aria-label="Breathing practices">
       <div class="deck-head">
-        <h2>Practices</h2>
+        <h2 id="deck-title">Practices</h2>
         <button class="pill-btn" id="new-sequence-btn">+ Create your own</button>
       </div>
       <div class="card-grid" id="preset-grid"></div>
@@ -50,7 +63,7 @@
     </section>
 
     <footer class="foot">
-      <p>free · open · yours — <a href="https://github.com" rel="noopener">self-host it</a></p>
+      <p>free · open · yours</p>
     </footer>
   </main>
 
@@ -107,6 +120,15 @@
     <div class="session-done" id="session-done" hidden>
       <h2>Well done.</h2>
       <p id="done-summary"></p>
+      <div class="mood-row" id="mood-row">
+        <span class="mood-q">how do you feel?</span>
+        <div class="mood-btns">
+          <button class="ghost-btn mood-btn" data-mood="calmer">calmer</button>
+          <button class="ghost-btn mood-btn" data-mood="same">the same</button>
+          <button class="ghost-btn mood-btn" data-mood="tense">still tense</button>
+        </div>
+      </div>
+      <p class="mood-thanks" id="mood-thanks" hidden>noted — see you at the next breath</p>
       <div class="preview-actions">
         <button class="primary-btn" id="again-btn">Once more</button>
         <button class="ghost-btn" id="done-home-btn">Home</button>
@@ -146,33 +168,8 @@
     </div>
   </section>
 
-  <!-- ============ AUTH DIALOG ============ -->
-  <dialog class="auth-dialog" id="auth-dialog">
-    <form method="dialog" class="auth-form" id="auth-form">
-      <h2 id="auth-title">Welcome back</h2>
-      <label class="field">
-        <span>Email</span>
-        <input type="email" id="auth-email" autocomplete="email" required>
-      </label>
-      <label class="field">
-        <span>Password</span>
-        <input type="password" id="auth-password" autocomplete="current-password" minlength="8" required>
-      </label>
-      <p class="form-error" id="auth-error" role="alert"></p>
-      <div class="preview-actions">
-        <button type="submit" class="primary-btn" id="auth-submit">Sign in</button>
-        <button type="button" class="ghost-btn" id="auth-cancel">Cancel</button>
-      </div>
-      <p class="auth-switch">
-        <span id="auth-switch-text">No account yet?</span>
-        <button type="button" class="link-btn" id="auth-switch-btn">Create one</button>
-      </p>
-    </form>
-  </dialog>
-
   <div class="toast" id="toast" role="status"></div>
 
-  <script src="/js/pocketbase.umd.js"></script>
   <script src="/js/styles.js"></script>
   <script src="/js/app.js"></script>
 </body>

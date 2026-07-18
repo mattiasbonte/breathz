@@ -1,4 +1,5 @@
-/* breathz — app logic. No framework, no build step. */
+/* breathz — app logic. No framework, no build step, no backend.
+   Everything lives in this browser (localStorage) or in a share URL. */
 (() => {
   "use strict";
 
@@ -7,12 +8,17 @@
   const $ = (id) => document.getElementById(id);
   const LS_SEQS = "breathz.sequences";
   const LS_SOUND = "breathz.sound";
+  const LS_HAPTICS = "breathz.haptics";
+  const LS_STYLE = "breathz.style";
+  const LS_LAST = "breathz.lastSeq";
+  const LS_JOURNAL = "breathz.journal";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const KIND_LABEL = { inhale: "in", hold: "hold", exhale: "out" };
   const KIND_SHORT = { inhale: "in", hold: "hold", exhale: "out" };
 
   const fmtSecs = (s) => (Number.isInteger(s) ? String(s) : s.toFixed(1));
+  const fmtCycles = (n) => `${n} cycle${n === 1 ? "" : "s"}`;
 
   function fmtDuration(totalSecs) {
     const m = Math.floor(totalSecs / 60);
@@ -35,79 +41,108 @@
     toast._t = setTimeout(() => el.classList.remove("show"), 2600);
   }
 
-  // ---------------------------------------------------------- data
+  function readLS(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+    catch { return fallback; }
+  }
 
-  const pb = new PocketBase(window.location.origin);
+  // ---------------------------------------------------------- practices
 
-  const FALLBACK_PRESETS = [
-    { name: "Box Breathing", description: "Inhale, hold, exhale, hold — four counts each.", cycles: 10,
+  const PRESETS = [
+    { name: "Box Breathing", style: "box", cycles: 10,
+      description: "Equal four-count breathing used by Navy SEALs to stay calm and focused. Inhale, hold, exhale, hold — each for 4 seconds.",
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }, { kind: "hold", seconds: 4 }] },
-    { name: "4-7-8 Relaxing Breath", description: "Inhale 4, hold 7, exhale slowly for 8.", cycles: 6,
+    { name: "4-7-8 Relaxing Breath", style: "bloom", cycles: 6,
+      description: "Dr. Andrew Weil's tranquilizing breath. Great before sleep: inhale 4, hold 7, exhale slowly for 8.",
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 7 }, { kind: "exhale", seconds: 8 }] },
-    { name: "Coherent Breathing", description: "Slow even breathing, ~5.5 breaths per minute.", cycles: 15,
+    { name: "Physiological Sigh", style: "orb", cycles: 6,
+      description: "Two stacked inhales then a long sigh out — the fastest known way to calm a spiking nervous system.",
+      phases: [{ kind: "inhale", seconds: 2.5 }, { kind: "inhale", seconds: 1 }, { kind: "exhale", seconds: 6 }] },
+    { name: "Coherent Breathing", style: "sway", cycles: 15,
+      description: "Slow, even breathing at ~5.5 breaths per minute to balance the nervous system and improve HRV.",
       phases: [{ kind: "inhale", seconds: 5.5 }, { kind: "exhale", seconds: 5.5 }] },
+    { name: "Extended Exhale", style: "column", cycles: 12,
+      description: "Exhaling longer than you inhale activates the parasympathetic system. Simple and effective stress relief.",
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+    { name: "Deep Sleep 4-8", style: "beacon", cycles: 12,
+      description: "Exhaling twice as long as you inhale. A simple 2:1 rhythm that eases the body toward sleep.",
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 8 }] },
+    { name: "Triangle Breathing", style: "triangle", cycles: 10,
+      description: "A gentler cousin of box breathing: inhale, hold, exhale — three sides, four counts each.",
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }] },
+    { name: "Equal Breathing", style: "rings", cycles: 15,
+      description: "Sama Vritti — even, unforced breaths to steady attention and restore balance.",
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 4 }] },
+    { name: "Wind Down", style: "cosmos", cycles: 8,
+      description: "A slow settling pattern: deep inhale, brief pause, long releasing exhale.",
+      phases: [{ kind: "inhale", seconds: 5 }, { kind: "hold", seconds: 1.5 }, { kind: "exhale", seconds: 8 }] },
+    { name: "Ujjayi Pace", style: "tide", cycles: 12,
+      description: "Slow oceanic yoga breathing: long steady inhales and exhales through the nose with a soft throat constriction.",
+      phases: [{ kind: "inhale", seconds: 6 }, { kind: "exhale", seconds: 6 }] },
+    { name: "Energize", style: "mandala", cycles: 20,
+      description: "Faster rhythmic breathing to wake up body and mind. Stop if you feel light-headed.",
+      phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 2 }] },
+  ].map((p) => ({ ...p, source: "preset" }));
+
+  // Feeling-based selection. Practices are matched by exact preset name.
+  const MOODS = [
+    { id: "anxious", label: "anxious",
+      note: "Long exhales and the physiological sigh switch on the body's own calming reflex.",
+      practices: ["Physiological Sigh", "Extended Exhale", "4-7-8 Relaxing Breath"] },
+    { id: "stressed", label: "stressed",
+      note: "Steady, square rhythms give a racing mind one simple thing to hold on to.",
+      practices: ["Box Breathing", "Coherent Breathing", "Extended Exhale"] },
+    { id: "sleepless", label: "can't sleep",
+      note: "Exhaling far longer than you inhale tells the body it's safe to power down.",
+      practices: ["4-7-8 Relaxing Breath", "Deep Sleep 4-8", "Wind Down"] },
+    { id: "tired", label: "low energy",
+      note: "Brisk, even breaths gently raise alertness. Stop if you feel light-headed.",
+      practices: ["Energize", "Equal Breathing"] },
+    { id: "scattered", label: "unfocused",
+      note: "Counting edges and corners anchors attention back in the body.",
+      practices: ["Box Breathing", "Triangle Breathing", "Ujjayi Pace"] },
+    { id: "balanced", label: "balanced",
+      note: "Coherent breathing keeps a good day steady — about five and a half breaths a minute.",
+      practices: ["Coherent Breathing", "Equal Breathing", "Ujjayi Pace"] },
   ];
 
   const state = {
-    presets: [],
-    mine: [],       // account sequences (when signed in)
     local: [],      // this-device sequences
     current: null,  // sequence shown in preview / session
     editing: null,  // sequence being edited in builder
+    mood: null,     // selected mood id (per visit, deliberately not persisted)
+    lastCardIndex: 0,
   };
 
-  function loadLocal() {
-    try { state.local = JSON.parse(localStorage.getItem(LS_SEQS)) || []; }
-    catch { state.local = []; }
-  }
-  function saveLocal() {
-    localStorage.setItem(LS_SEQS, JSON.stringify(state.local));
+  function loadLocal() { state.local = readLS(LS_SEQS, []); }
+  function saveLocal() { localStorage.setItem(LS_SEQS, JSON.stringify(state.local)); }
+
+  function homeSeq() {
+    const last = readLS(LS_LAST, null);
+    if (last && !validateSequence(last)) return last;
+    return PRESETS[0];
   }
 
-  function normalizeRecord(r, source) {
-    return {
-      id: r.id,
-      name: r.name,
-      description: r.description || "",
-      phases: r.phases,
-      cycles: r.cycles || 10,
-      source, // 'preset' | 'account' | 'local' | 'link' | 'adhoc'
-    };
-  }
+  // ---------------------------------------------------------- journal
 
-  async function loadPresets() {
-    try {
-      const res = await pb.collection("sequences").getList(1, 50, {
-        filter: "is_preset = true",
-        sort: "created",
-      });
-      state.presets = res.items.map((r) => normalizeRecord(r, "preset"));
-      localStorage.setItem("breathz.presetCache", JSON.stringify(state.presets));
-    } catch {
-      try {
-        state.presets = JSON.parse(localStorage.getItem("breathz.presetCache")) || [];
-      } catch { state.presets = []; }
-      if (!state.presets.length) {
-        state.presets = FALLBACK_PRESETS.map((p) => ({ ...p, source: "preset" }));
-      }
+  function journal() { return readLS(LS_JOURNAL, []); }
+  function journalAdd(entry) {
+    const j = journal();
+    j.push(entry);
+    localStorage.setItem(LS_JOURNAL, JSON.stringify(j.slice(-300)));
+  }
+  function journalSetLastMood(mood) {
+    const j = journal();
+    if (j.length) {
+      j[j.length - 1].mood = mood;
+      localStorage.setItem(LS_JOURNAL, JSON.stringify(j));
     }
-  }
-
-  async function loadMine() {
-    if (!pb.authStore.isValid) { state.mine = []; return; }
-    try {
-      const res = await pb.collection("sequences").getList(1, 200, {
-        filter: `owner = "${pb.authStore.record.id}"`,
-        sort: "-created",
-      });
-      state.mine = res.items.map((r) => normalizeRecord(r, "account"));
-    } catch { state.mine = []; }
   }
 
   // ---------------------------------------------------------- validation
 
   function validateSequence(seq) {
-    if (!Array.isArray(seq.phases) || seq.phases.length === 0) return "Add at least one phase.";
+    if (!seq || !Array.isArray(seq.phases) || seq.phases.length === 0) return "Add at least one phase.";
     if (seq.phases.length > 12) return "Maximum 12 phases per cycle.";
     for (const p of seq.phases) {
       if (!["inhale", "hold", "exhale"].includes(p.kind)) return "Unknown phase type.";
@@ -122,13 +157,18 @@
   }
 
   // ---------------------------------------------------------- share links
-  // format: #s=i4-h4-e4-h4&c=10&n=Box%20Breathing  (seconds may be decimal)
+  // #s=i4-h4-e4-h4&c=10&n=Box%20Breathing&v=orb — the whole experience in a URL.
 
   function encodeShare(seq) {
     const s = seq.phases.map((p) => p.kind[0] + fmtSecs(p.seconds)).join("-");
     let hash = `#s=${s}&c=${seq.cycles}`;
     if (seq.name) hash += `&n=${encodeURIComponent(seq.name)}`;
-    return `${window.location.origin}/${hash}`;
+    hash += `&v=${seq.style || currentStyleId}`;
+    return `${window.location.origin}${window.location.pathname}${hash}`;
+  }
+
+  function validStyleId(id) {
+    return id && window.BreathStyles.some((s) => s.id === id) ? id : null;
   }
 
   function decodeShare(hash) {
@@ -149,7 +189,9 @@
         description: "Opened from a shared link.",
         phases, cycles, source: "link",
       };
-      return validateSequence(seq) ? null : seq;
+      if (validateSequence(seq)) return null;
+      seq.style = validStyleId(params.get("v"));
+      return seq;
     } catch { return null; }
   }
 
@@ -186,8 +228,20 @@
     },
   };
 
-  function renderSoundToggle() {
+  // Gentle vibration on phase changes — for breathing with closed eyes.
+  const haptics = {
+    supported: "vibrate" in navigator,
+    enabled: localStorage.getItem(LS_HAPTICS) === "1",
+    pulse(kind) {
+      if (!this.enabled || !this.supported) return;
+      navigator.vibrate(kind === "hold" ? 15 : [0, 35]);
+    },
+  };
+
+  function renderToggles() {
     $("sound-toggle").setAttribute("aria-pressed", audio.enabled ? "true" : "false");
+    $("haptics-toggle").hidden = !haptics.supported;
+    $("haptics-toggle").setAttribute("aria-pressed", haptics.enabled ? "true" : "false");
   }
 
   // ---------------------------------------------------------- wake lock
@@ -218,7 +272,7 @@
     for (const s of SCREENS) $(`screen-${s}`).classList.toggle("active", s === name);
     document.body.classList.toggle("in-session", name === "session");
     if (name !== "session") document.body.classList.remove("paused");
-    if (name !== "preview") styleDemo.stop();
+    styleDemo.stop(); // screens that want the demo restart it themselves
     // Don't leave focus on a control inside a now-hidden screen — a later
     // Space/Enter would "click" it invisibly.
     const focused = document.activeElement;
@@ -232,7 +286,131 @@
     return SCREENS.find((s) => $(`screen-${s}`).classList.contains("active"));
   }
 
-  // ---------------------------------------------------------- home rendering
+  // ---------------------------------------------------------- style system
+
+  const EASE = "cubic-bezier(0.37, 0, 0.63, 1)";
+
+  let currentStyleId = localStorage.getItem(LS_STYLE) || "orb";
+  let builtStyleId = null;
+
+  function activeStyle() {
+    return window.BreathStyles.find((s) => s.id === currentStyleId) || window.BreathStyles[0];
+  }
+
+  // Build the active style's DOM if needed and apply its static baseline.
+  // Must be called with the session screen visible (styles measure the stage).
+  function ensureStage(level, phaseIdx) {
+    const stage = $("stage");
+    const style = activeStyle();
+    if (builtStyleId !== style.id) {
+      stage.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      stage.innerHTML = "";
+      style.build(stage);
+      builtStyleId = style.id;
+    }
+    style.set(stage, level, phaseIdx);
+  }
+
+  function animatePhase(ctx) {
+    const stage = $("stage");
+    if (reducedMotion.matches) {
+      // Gentle opacity pulse instead of movement, whatever the style.
+      const o = ctx.kind === "inhale" ? [0.55, 1] : ctx.kind === "exhale" ? [1, 0.55] : [1, 1];
+      return [stage.animate({ opacity: o }, { duration: ctx.durMs, easing: EASE, fill: "forwards" })];
+    }
+    return activeStyle().animate(stage, ctx);
+  }
+
+  // ---------------------------------------------------------- style demo
+  // A small looping breath used on the home screen and in the preview so the
+  // selected style can be felt before beginning. Breathes at the practice's
+  // real pace when one is given.
+
+  function demoPace(seq) {
+    const inS = seq?.phases?.find((p) => p.kind === "inhale")?.seconds || 3;
+    const outS = seq?.phases?.find((p) => p.kind === "exhale")?.seconds || 3;
+    return { inMs: Math.min(inS, 8) * 1000, outMs: Math.min(outS, 8) * 1000 };
+  }
+
+  const styleDemo = {
+    el: null,
+    timer: 0,
+    anims: [],
+    running: false,
+    level: 0,
+    phaseIdx: 0,
+    inMs: 2800,
+    outMs: 2800,
+
+    start(stageEl, pace) {
+      this.stop();
+      this.el = stageEl;
+      this.inMs = pace?.inMs || 2800;
+      this.outMs = pace?.outMs || 2800;
+      const style = activeStyle();
+      stageEl.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      stageEl.innerHTML = "";
+      style.build(stageEl);
+      this.level = 0;
+      this.phaseIdx = 0;
+      if (reducedMotion.matches) {
+        style.set(stageEl, 0.7, 0); // static impression, no motion
+        return;
+      }
+      this.running = true;
+      this.tick();
+    },
+
+    tick() {
+      if (!this.running) return;
+      const style = activeStyle();
+      const to = this.level === 0 ? 1 : 0;
+      const dur = to === 1 ? this.inMs : this.outMs;
+      this.anims.forEach((a) => a.cancel());
+      style.set(this.el, this.level, this.phaseIdx);
+      this.anims = style.animate(this.el, {
+        from: this.level, to, durMs: dur,
+        kind: to === 1 ? "inhale" : "exhale",
+        phaseIdx: this.phaseIdx,
+      });
+      this.level = to;
+      this.phaseIdx++;
+      this.timer = setTimeout(() => this.tick(), dur);
+    },
+
+    stop() {
+      this.running = false;
+      clearTimeout(this.timer);
+      this.anims.forEach((a) => a.cancel());
+      this.anims = [];
+    },
+  };
+
+  // ---------------------------------------------------------- style picker
+
+  function renderStylePicker() {
+    const row = $("style-row");
+    row.innerHTML = "";
+    for (const s of window.BreathStyles) {
+      const btn = document.createElement("button");
+      const selected = s.id === currentStyleId;
+      btn.className = "style-chip" + (selected ? " selected" : "");
+      btn.setAttribute("role", "radio");
+      btn.setAttribute("aria-checked", selected ? "true" : "false");
+      btn.textContent = s.name;
+      btn.addEventListener("click", () => {
+        currentStyleId = s.id;
+        localStorage.setItem(LS_STYLE, s.id);
+        if (state.current) state.current.style = s.id; // override sticks to this practice
+        renderStylePicker();
+        styleDemo.start($("demo-stage"), demoPace(state.current));
+      });
+      row.appendChild(btn);
+    }
+    $("style-hint").textContent = activeStyle().hint;
+  }
+
+  // ---------------------------------------------------------- home
 
   function chipHTML(p) {
     return `<span class="chip ${p.kind}">${KIND_SHORT[p.kind]} ${fmtSecs(p.seconds)}</span>`;
@@ -242,7 +420,7 @@
     return `
       <h3>${escapeHTML(seq.name)}</h3>
       <div class="pattern">${seq.phases.map(chipHTML).join("")}</div>
-      <div class="meta">${seq.cycles} cycles · ${fmtDuration(seqDuration(seq))}</div>`;
+      <div class="meta">${fmtCycles(seq.cycles)} · ${fmtDuration(seqDuration(seq))}</div>`;
   }
 
   function escapeHTML(s) {
@@ -251,11 +429,55 @@
     return d.innerHTML;
   }
 
+  function renderHomeHero() {
+    const seq = homeSeq();
+    $("home-seq-name").textContent = seq.name;
+    $("home-seq-meta").textContent = `${fmtCycles(seq.cycles)} · ${fmtDuration(seqDuration(seq))}`;
+  }
+
+  function startHomeDemo() {
+    const seq = homeSeq();
+    if (validStyleId(seq.style)) currentStyleId = seq.style;
+    styleDemo.start($("home-stage"), demoPace(seq));
+  }
+
+  function renderMoodPicker() {
+    const row = $("mood-chip-row");
+    row.innerHTML = "";
+    for (const m of MOODS) {
+      const btn = document.createElement("button");
+      const selected = state.mood === m.id;
+      btn.className = "mood-chip" + (selected ? " selected" : "");
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+      btn.textContent = m.label;
+      btn.addEventListener("click", () => {
+        state.mood = selected ? null : m.id;
+        renderMoodPicker();
+        renderHome();
+      });
+      row.appendChild(btn);
+    }
+    const mood = MOODS.find((m) => m.id === state.mood);
+    $("mood-note").textContent = mood ? mood.note : "";
+  }
+
+  function visiblePresets() {
+    const mood = MOODS.find((m) => m.id === state.mood);
+    if (!mood) return PRESETS;
+    return mood.practices
+      .map((name) => PRESETS.find((p) => p.name === name))
+      .filter(Boolean);
+  }
+
   function renderHome() {
+    renderHomeHero();
+    const mood = MOODS.find((m) => m.id === state.mood);
+    $("deck-title").textContent = mood ? `for when you feel ${mood.label}` : "Practices";
+
     let cardIndex = 0;
     const grid = $("preset-grid");
     grid.innerHTML = "";
-    for (const seq of state.presets) {
+    for (const seq of visiblePresets()) {
       const card = document.createElement("button");
       card.className = "seq-card";
       card.innerHTML = cardHTML(seq);
@@ -264,22 +486,20 @@
       grid.appendChild(card);
     }
 
-    const mineAll = [...state.mine, ...state.local];
-    $("mine-deck").hidden = mineAll.length === 0;
+    $("mine-deck").hidden = state.local.length === 0;
     const mineGrid = $("mine-grid");
     mineGrid.innerHTML = "";
-    for (const seq of mineAll) {
+    for (const seq of state.local) {
       const card = document.createElement("button");
       card.className = "seq-card";
-      card.innerHTML = cardHTML(seq) +
-        (seq.source === "local" ? `<div class="meta" style="margin-top:6px">on this device</div>` : "");
+      card.innerHTML = cardHTML(seq);
       const idx = cardIndex++;
       card.addEventListener("click", () => { state.lastCardIndex = idx; openPreview(seq); });
       mineGrid.appendChild(card);
     }
   }
 
-  // ------------------------------------------------ keyboard navigation
+  // ------------------------------------------------ keyboard helpers
 
   function homeCards() {
     return [...document.querySelectorAll("#preset-grid .seq-card, #mine-grid .seq-card")];
@@ -308,28 +528,33 @@
     cards[next].focus();
   }
 
-  function backToHome() {
+  function backToHome(focusCard = true) {
     show("home");
-    const cards = homeCards();
-    const target = cards[state.lastCardIndex] || cards[0];
-    if (target) target.focus({ preventScroll: true });
+    renderHome();
+    startHomeDemo();
+    if (focusCard) {
+      const cards = homeCards();
+      const target = cards[state.lastCardIndex] || cards[0];
+      if (target) target.focus({ preventScroll: true });
+    }
   }
 
   // ---------------------------------------------------------- preview
 
   function openPreview(seq) {
     state.current = { ...seq, phases: seq.phases.map((p) => ({ ...p })) };
+    // each practice opens in its natural animation; the picker still overrides
+    if (validStyleId(seq.style)) currentStyleId = seq.style;
     $("preview-name").textContent = seq.name;
     $("preview-desc").textContent = seq.description || "";
     $("preview-pattern").innerHTML = seq.phases.map(chipHTML).join("");
     $("preview-cycles").value = seq.cycles;
     updatePreviewDuration();
-    const own = seq.source === "account" || seq.source === "local";
-    $("edit-btn").hidden = !own;
-    $("delete-btn").hidden = !own;
+    $("edit-btn").hidden = false; // editing a preset saves a personal copy
+    $("delete-btn").hidden = seq.source !== "local";
     renderStylePicker();
     show("preview");
-    styleDemo.start(); // after show(): the demo stage must be measurable
+    styleDemo.start($("demo-stage"), demoPace(state.current));
     $("start-btn").focus({ preventScroll: true });
   }
 
@@ -342,40 +567,6 @@
   }
 
   // ---------------------------------------------------------- session engine
-
-  const EASE = "cubic-bezier(0.37, 0, 0.63, 1)";
-  const LS_STYLE = "breathz.style";
-
-  let currentStyleId = localStorage.getItem(LS_STYLE) || "orb";
-  let builtStyleId = null;
-
-  function activeStyle() {
-    return window.BreathStyles.find((s) => s.id === currentStyleId) || window.BreathStyles[0];
-  }
-
-  // Build the active style's DOM if needed and apply its static baseline.
-  // Must be called with the session screen visible (styles measure the stage).
-  function ensureStage(level, phaseIdx) {
-    const stage = $("stage");
-    const style = activeStyle();
-    if (builtStyleId !== style.id) {
-      stage.getAnimations().forEach((a) => a.cancel());
-      stage.innerHTML = "";
-      style.build(stage);
-      builtStyleId = style.id;
-    }
-    style.set(stage, level, phaseIdx);
-  }
-
-  function animatePhase(ctx) {
-    const stage = $("stage");
-    if (reducedMotion.matches) {
-      // Gentle opacity pulse instead of movement, whatever the style.
-      const o = ctx.kind === "inhale" ? [0.55, 1] : ctx.kind === "exhale" ? [1, 0.55] : [1, 1];
-      return [stage.animate({ opacity: o }, { duration: ctx.durMs, easing: EASE, fill: "forwards" })];
-    }
-    return activeStyle().animate(stage, ctx);
-  }
 
   const session = {
     running: false,
@@ -392,6 +583,16 @@
 
     start(seq) {
       this.seq = seq;
+      state.current = seq;
+      if (validStyleId(seq.style)) {
+        currentStyleId = seq.style;
+        localStorage.setItem(LS_STYLE, seq.style);
+      }
+      localStorage.setItem(LS_LAST, JSON.stringify({
+        name: seq.name, description: seq.description || "",
+        phases: seq.phases, cycles: seq.cycles, source: seq.source,
+        style: seq.style || currentStyleId,
+      }));
       this.flat = [];
       for (let c = 0; c < seq.cycles; c++) {
         for (const p of seq.phases) this.flat.push({ ...p, cycle: c + 1 });
@@ -424,6 +625,7 @@
       $("phase-label").textContent = KIND_LABEL[phase.kind];
       $("cycle-indicator").textContent = `cycle ${phase.cycle} of ${this.seq.cycles}`;
       audio.cue(phase.kind);
+      haptics.pulse(phase.kind);
 
       this.phaseDur = phase.seconds * 1000;
       this.phaseStart = performance.now();
@@ -498,7 +700,9 @@
       this.anims = [];
       wakeLock.release();
       document.body.classList.remove("paused");
-      if (goHome) show("preview");
+      // openPreview repopulates the whole screen — required when the session
+      // was started straight from home and the preview was never rendered.
+      if (goHome) openPreview(state.current);
     },
 
     finish() {
@@ -507,90 +711,18 @@
       this.anims.forEach((a) => a.cancel());
       this.anims = [];
       wakeLock.release();
+      journalAdd({ t: Date.now(), seq: this.seq.name, cycles: this.seq.cycles });
+      const n = journal().length;
       const total = fmtDuration(seqDuration(this.seq));
       $("done-summary").textContent =
-        `${this.seq.cycles} cycles of ${this.seq.name} — about ${total} of mindful breathing.`;
+        `${fmtCycles(this.seq.cycles)} of ${this.seq.name} — about ${total} of mindful breathing.` +
+        (n > 1 ? ` Breath session #${n}.` : "");
+      $("mood-row").hidden = false;
+      $("mood-thanks").hidden = true;
       document.querySelector(".session-stage").style.display = "none";
       $("session-done").hidden = false;
     },
   };
-
-  // ---------------------------------------------------------- style demo
-  // A little looping breath (in 2.8s, out 2.8s) on the preview screen so you
-  // can see what the selected style feels like before beginning.
-
-  const styleDemo = {
-    timer: 0,
-    anims: [],
-    running: false,
-    level: 0,
-    phaseIdx: 0,
-
-    start() {
-      this.stop();
-      const stage = $("demo-stage");
-      const style = activeStyle();
-      stage.getAnimations({ subtree: true }).forEach((a) => a.cancel());
-      stage.innerHTML = "";
-      style.build(stage);
-      this.level = 0;
-      this.phaseIdx = 0;
-      if (reducedMotion.matches) {
-        style.set(stage, 0.7, 0); // static impression, no motion
-        return;
-      }
-      this.running = true;
-      this.tick();
-    },
-
-    tick() {
-      if (!this.running) return;
-      const stage = $("demo-stage");
-      const style = activeStyle();
-      const to = this.level === 0 ? 1 : 0;
-      const DUR = 2800;
-      this.anims.forEach((a) => a.cancel());
-      style.set(stage, this.level, this.phaseIdx);
-      this.anims = style.animate(stage, {
-        from: this.level, to, durMs: DUR,
-        kind: to === 1 ? "inhale" : "exhale",
-        phaseIdx: this.phaseIdx,
-      });
-      this.level = to;
-      this.phaseIdx++;
-      this.timer = setTimeout(() => this.tick(), DUR);
-    },
-
-    stop() {
-      this.running = false;
-      clearTimeout(this.timer);
-      this.anims.forEach((a) => a.cancel());
-      this.anims = [];
-    },
-  };
-
-  // ---------------------------------------------------------- style picker
-
-  function renderStylePicker() {
-    const row = $("style-row");
-    row.innerHTML = "";
-    for (const s of window.BreathStyles) {
-      const btn = document.createElement("button");
-      const selected = s.id === currentStyleId;
-      btn.className = "style-chip" + (selected ? " selected" : "");
-      btn.setAttribute("role", "radio");
-      btn.setAttribute("aria-checked", selected ? "true" : "false");
-      btn.textContent = s.name;
-      btn.addEventListener("click", () => {
-        currentStyleId = s.id;
-        localStorage.setItem(LS_STYLE, s.id);
-        renderStylePicker();
-        styleDemo.start();
-      });
-      row.appendChild(btn);
-    }
-    $("style-hint").textContent = activeStyle().hint;
-  }
 
   // ---------------------------------------------------------- builder
 
@@ -598,13 +730,11 @@
     state.editing = seq
       ? { ...seq, phases: seq.phases.map((p) => ({ ...p })) }
       : { name: "", phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }], cycles: 10, source: "adhoc" };
-    $("builder-title").textContent = seq ? "Edit sequence" : "Create a sequence";
+    $("builder-title").textContent = seq ? "Shape this sequence" : "Create a sequence";
     $("builder-name").value = state.editing.name || "";
     $("builder-cycles").value = state.editing.cycles;
     $("builder-error").textContent = "";
-    $("builder-note").textContent = pb.authStore.isValid
-      ? "Saved sequences sync to your account."
-      : "Saved sequences stay on this device. Sign in to sync them.";
+    $("builder-note").textContent = "Sequences are saved in this browser — share one as a link to keep it anywhere.";
     renderPhaseRows();
     show("builder");
     $("builder-name").focus({ preventScroll: true });
@@ -651,148 +781,57 @@
     return seq;
   }
 
-  async function builderSave() {
+  function builderSave() {
     const seq = builderCollect();
     const err = validateSequence(seq);
     if (err) { $("builder-error").textContent = err; return; }
     $("builder-error").textContent = "";
 
-    if (pb.authStore.isValid) {
-      try {
-        const payload = {
-          name: seq.name,
-          description: seq.description || "",
-          phases: seq.phases,
-          cycles: seq.cycles,
-          owner: pb.authStore.record.id,
-          is_preset: false,
-        };
-        let rec;
-        if (seq.source === "account" && seq.id) {
-          rec = await pb.collection("sequences").update(seq.id, payload);
-        } else {
-          rec = await pb.collection("sequences").create(payload);
-        }
-        await loadMine();
-        renderHome();
-        toast("Saved to your account");
-        openPreview(normalizeRecord(rec, "account"));
-      } catch (e) {
-        $("builder-error").textContent = "Could not save — " + (e?.message || "unknown error");
-      }
+    seq.style = validStyleId(seq.style) || currentStyleId;
+    if (seq.source === "local" && seq.id) {
+      const i = state.local.findIndex((s) => s.id === seq.id);
+      if (i >= 0) state.local[i] = { ...seq };
     } else {
-      if (seq.source === "local" && seq.id) {
-        const i = state.local.findIndex((s) => s.id === seq.id);
-        if (i >= 0) state.local[i] = { ...seq };
-      } else {
-        seq.id = "local_" + Math.random().toString(36).slice(2, 10);
-        seq.source = "local";
-        state.local.unshift({ ...seq });
-      }
-      saveLocal();
-      renderHome();
-      toast("Saved on this device");
-      openPreview({ ...seq });
+      seq.id = "local_" + Math.random().toString(36).slice(2, 10);
+      seq.source = "local";
+      state.local.unshift({ ...seq });
     }
-  }
-
-  // ---------------------------------------------------------- auth
-
-  const authUI = { mode: "signin" };
-
-  function renderAuthState() {
-    if (pb.authStore.isValid) {
-      $("auth-btn").textContent = "Sign out";
-    } else {
-      $("auth-btn").textContent = "Sign in";
-    }
-  }
-
-  function setAuthMode(mode) {
-    authUI.mode = mode;
-    const signin = mode === "signin";
-    $("auth-title").textContent = signin ? "Welcome back" : "Create your account";
-    $("auth-submit").textContent = signin ? "Sign in" : "Create account";
-    $("auth-switch-text").textContent = signin ? "No account yet?" : "Already have one?";
-    $("auth-switch-btn").textContent = signin ? "Create one" : "Sign in";
-    $("auth-password").autocomplete = signin ? "current-password" : "new-password";
-    $("auth-error").textContent = "";
-  }
-
-  async function handleAuthSubmit(e) {
-    e.preventDefault();
-    const email = $("auth-email").value.trim();
-    const password = $("auth-password").value;
-    $("auth-error").textContent = "";
-    try {
-      if (authUI.mode === "signup") {
-        await pb.collection("users").create({ email, password, passwordConfirm: password });
-      }
-      await pb.collection("users").authWithPassword(email, password);
-      $("auth-dialog").close();
-      renderAuthState();
-      await loadMine();
-      renderHome();
-      toast(authUI.mode === "signup" ? "Account created — welcome" : "Signed in");
-      offerLocalSync();
-    } catch (err) {
-      const data = err?.data?.data;
-      const first = data && Object.values(data)[0]?.message;
-      $("auth-error").textContent = first || err?.message || "Something went wrong.";
-    }
-  }
-
-  async function offerLocalSync() {
-    if (!state.local.length || !pb.authStore.isValid) return;
-    if (!confirm(`Move ${state.local.length} sequence(s) from this device to your account?`)) return;
-    const failed = [];
-    for (const seq of state.local) {
-      try {
-        await pb.collection("sequences").create({
-          name: seq.name, description: seq.description || "",
-          phases: seq.phases, cycles: seq.cycles,
-          owner: pb.authStore.record.id, is_preset: false,
-        });
-      } catch { failed.push(seq); }
-    }
-    state.local = failed;
     saveLocal();
-    await loadMine();
     renderHome();
-    toast(failed.length ? "Some sequences could not be moved" : "Sequences moved to your account");
+    toast("Saved on this device");
+    openPreview({ ...seq });
   }
 
   // ---------------------------------------------------------- wire-up
 
   function bind() {
-    $("brand-link").addEventListener("click", (e) => { e.preventDefault(); show("home"); });
+    $("brand-link").addEventListener("click", (e) => { e.preventDefault(); backToHome(false); });
 
     $("sound-toggle").addEventListener("click", () => {
       audio.enabled = !audio.enabled;
       localStorage.setItem(LS_SOUND, audio.enabled ? "1" : "0");
       if (audio.enabled) { audio.ensure(); audio.cue("hold"); }
-      renderSoundToggle();
+      renderToggles();
     });
 
-    $("auth-btn").addEventListener("click", () => {
-      if (pb.authStore.isValid) {
-        pb.authStore.clear();
-        state.mine = [];
-        renderAuthState();
-        renderHome();
-        toast("Signed out");
-      } else {
-        setAuthMode("signin");
-        $("auth-dialog").showModal();
-      }
+    $("haptics-toggle").addEventListener("click", () => {
+      haptics.enabled = !haptics.enabled;
+      localStorage.setItem(LS_HAPTICS, haptics.enabled ? "1" : "0");
+      if (haptics.enabled) navigator.vibrate?.(35);
+      renderToggles();
     });
-    $("auth-cancel").addEventListener("click", () => $("auth-dialog").close());
-    $("auth-switch-btn").addEventListener("click", () =>
-      setAuthMode(authUI.mode === "signin" ? "signup" : "signin"));
-    $("auth-form").addEventListener("submit", handleAuthSubmit);
+
+    // home
+    $("home-begin").addEventListener("click", () => {
+      const seq = homeSeq();
+      const err = validateSequence(seq);
+      if (err) { toast(err); return; }
+      session.start({ ...seq, phases: seq.phases.map((p) => ({ ...p })) });
+    });
+    $("home-customize").addEventListener("click", () => openPreview(homeSeq()));
 
     // preview
-    $("preview-back").addEventListener("click", backToHome);
+    $("preview-back").addEventListener("click", () => backToHome());
     $("preview-cycles").addEventListener("input", updatePreviewDuration);
     $("start-btn").addEventListener("click", () => {
       const err = validateSequence(state.current);
@@ -802,25 +841,23 @@
     $("share-btn").addEventListener("click", async () => {
       const url = encodeShare(state.current);
       try {
-        await navigator.clipboard.writeText(url);
-        toast("Link copied — share your rhythm");
-      } catch {
-        prompt("Copy this link:", url);
+        if (navigator.share) {
+          await navigator.share({ title: `${state.current.name} — breathz`, url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          toast("Link copied — share your rhythm");
+        }
+      } catch (e) {
+        if (e?.name !== "AbortError") prompt("Copy this link:", url);
       }
     });
     $("edit-btn").addEventListener("click", () => openBuilder(state.current));
-    $("delete-btn").addEventListener("click", async () => {
+    $("delete-btn").addEventListener("click", () => {
       const seq = state.current;
       if (!confirm(`Delete “${seq.name}”?`)) return;
-      if (seq.source === "account") {
-        try { await pb.collection("sequences").delete(seq.id); await loadMine(); }
-        catch { toast("Could not delete"); return; }
-      } else if (seq.source === "local") {
-        state.local = state.local.filter((s) => s.id !== seq.id);
-        saveLocal();
-      }
-      renderHome();
-      show("home");
+      state.local = state.local.filter((s) => s.id !== seq.id);
+      saveLocal();
+      backToHome(false);
       toast("Deleted");
     });
 
@@ -828,11 +865,21 @@
     $("pause-btn").addEventListener("click", () => session.paused ? session.resume() : session.pause());
     $("end-btn").addEventListener("click", () => session.stop());
     $("again-btn").addEventListener("click", () => session.start(state.current));
-    $("done-home-btn").addEventListener("click", () => { show("home"); });
+    $("done-home-btn").addEventListener("click", () => backToHome(false));
+    document.querySelectorAll(".mood-btn").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        journalSetLastMood(btn.dataset.mood);
+        $("mood-row").hidden = true;
+        const thanks = $("mood-thanks");
+        thanks.textContent = btn.dataset.mood === "tense"
+          ? "noted — a longer exhale can help. Try the Physiological Sigh next."
+          : "noted — see you at the next breath";
+        thanks.hidden = false;
+      }));
 
     // builder
     $("new-sequence-btn").addEventListener("click", () => openBuilder(null));
-    $("builder-back").addEventListener("click", backToHome);
+    $("builder-back").addEventListener("click", () => backToHome());
     $("builder-cycles").addEventListener("input", updateBuilderSummary);
     document.querySelectorAll("[data-add-kind]").forEach((btn) =>
       btn.addEventListener("click", () => {
@@ -850,12 +897,11 @@
     });
 
     // ---- full keyboard navigation ----
-    // home: arrows move between cards, Enter/Space opens, N = new sequence
-    // preview: Space/Enter begins, E = edit, S = share, Esc = back
-    // session: Space = pause/resume, Esc = end; done: Space = again, Esc = home
+    // home: arrows move between cards, Enter/Space begins, N = new sequence
+    // preview: Space/Enter/→ begins, ← back, E = edit, S = share, Esc = back
+    // session: Space = pause/resume, Esc = end; done: Space/→ = again, ←/Esc = home
     // builder: Esc = back (form itself is Tab-navigable)
     document.addEventListener("keydown", (e) => {
-      if ($("auth-dialog").open) return; // native dialog handles Esc/Tab
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const t = e.target;
       const typing = t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT";
@@ -871,7 +917,7 @@
         } else { // "well done" overlay
           if (e.code === "Space" || e.code === "Enter" || e.code === "ArrowRight") {
             e.preventDefault(); session.start(state.current);
-          } else if (e.code === "Escape" || e.code === "ArrowLeft") backToHome();
+          } else if (e.code === "Escape" || e.code === "ArrowLeft") backToHome(false);
         }
         return;
       }
@@ -890,6 +936,7 @@
         else if (e.code === "ArrowLeft") { e.preventDefault(); moveCardFocus(-1); }
         else if (e.code === "ArrowDown") { e.preventDefault(); moveCardFocus(cols); }
         else if (e.code === "ArrowUp") { e.preventDefault(); moveCardFocus(-cols); }
+        else if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); $("home-begin").click(); }
         else if (e.key === "n" || e.key === "N") { e.preventDefault(); openBuilder(null); }
       } else if (screen === "preview") {
         const beginSession = () => {
@@ -905,8 +952,9 @@
           const step = e.code === "ArrowRight" ? 1 : -1;
           currentStyleId = styles[(i + step + styles.length) % styles.length].id;
           localStorage.setItem(LS_STYLE, currentStyleId);
+          if (state.current) state.current.style = currentStyleId;
           renderStylePicker();
-          styleDemo.start();
+          styleDemo.start($("demo-stage"), demoPace(state.current));
           document.querySelector(".style-chip.selected")?.focus();
         } else if (e.code === "ArrowRight") {
           e.preventDefault(); beginSession();
@@ -925,25 +973,13 @@
 
   // ---------------------------------------------------------- boot
 
-  async function boot() {
+  function boot() {
     loadLocal();
-    renderSoundToggle();
-    renderAuthState();
+    renderToggles();
     bind();
-
-    // refresh stale auth token if present
-    if (pb.authStore.isValid) {
-      pb.collection("users").authRefresh().catch(() => {
-        pb.authStore.clear();
-        state.mine = [];
-        renderAuthState();
-        renderHome();
-      });
-    }
-
-    await loadPresets();
-    await loadMine();
+    renderMoodPicker();
     renderHome();
+    startHomeDemo();
 
     // shared link? (also handle links opened while the app is already running)
     const handleSharedHash = () => {
@@ -951,7 +987,7 @@
       if (shared) {
         if (session.running) session.stop(false);
         openPreview(shared);
-        history.replaceState(null, "", "/");
+        history.replaceState(null, "", window.location.pathname);
       }
     };
     handleSharedHash();

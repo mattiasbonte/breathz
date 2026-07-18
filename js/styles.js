@@ -173,6 +173,49 @@
     },
   };
 
+  // ----------------------------------------------------------- 4b. triangle
+
+  const triangle = {
+    id: "triangle",
+    name: "Triangle",
+    hint: "climb one slope as you inhale, cross the top, release down the other",
+    // Flat-top triangle: corners TL, TR and a bottom point. Inhale ascends,
+    // holds cross the top, exhale descends — three phases, three sides.
+    _pos: "bottom", // 'bottom' | 'tl' | 'tr'
+    _xy(stage, pos) {
+      const frame = stage.querySelector(".tri-frame");
+      const w = frame.clientWidth, h = frame.clientHeight;
+      const pts = { tl: [0, 0], tr: [w, 0], bottom: [w / 2, h] };
+      const [x, y] = pts[pos];
+      return `translate(${x}px, ${y}px)`;
+    },
+    _target(kind) {
+      if (kind === "inhale") return this._pos === "bottom" ? "tl" : this._pos;
+      if (kind === "exhale") return "bottom";
+      return this._pos === "tl" ? "tr" : this._pos === "tr" ? "tl" : "bottom";
+    },
+    build(stage) {
+      const frame = el(stage, "tri-frame");
+      frame.innerHTML =
+        '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+        '<polygon points="1,1 99,1 50,99" fill="none" stroke="rgba(165,180,252,0.55)" ' +
+        'stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';
+      el(frame, "tri-dot");
+    },
+    set(stage, lv, phaseIdx = 0) {
+      if (phaseIdx === 0) this._pos = lv > 0.5 ? "tl" : "bottom";
+      stage.querySelector(".tri-dot").style.transform = this._xy(stage, this._pos);
+    },
+    animate(stage, ctx) {
+      const dot = stage.querySelector(".tri-dot");
+      const from = this._xy(stage, this._pos);
+      const target = this._target(ctx.kind);
+      if (target === this._pos) return genericHold(stage, ctx.durMs);
+      this._pos = target;
+      return [fwd(dot, { transform: [from, this._xy(stage, target)] }, ctx.durMs)];
+    },
+  };
+
   // --------------------------------------------------------------- 5. tide
 
   const tide = {
@@ -373,5 +416,5 @@
     },
   };
 
-  window.BreathStyles = [orb, rings, bloom, box, tide, cosmos, sway, mandala, column, beacon];
+  window.BreathStyles = [orb, rings, bloom, box, triangle, tide, cosmos, sway, mandala, column, beacon];
 })();

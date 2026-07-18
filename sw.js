@@ -1,11 +1,11 @@
 /* breathz service worker — precache the app shell so sessions work offline. */
-const CACHE = "breathz-v1";
+const CACHE = "breathz-v2";
 const SHELL = [
   "/",
   "/index.html",
   "/css/app.css",
   "/js/app.js",
-  "/js/pocketbase.umd.js",
+  "/js/styles.js",
   "/manifest.webmanifest",
   "/icons/favicon.svg",
   "/icons/icon-192.png",
