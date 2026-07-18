@@ -44,18 +44,20 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Cache-first for static assets.
+  // Stale-while-revalidate for static assets: serve from cache instantly,
+  // refresh the cache in the background so a redeploy propagates on next load.
   e.respondWith(
-    caches.match(e.request).then(
-      (hit) =>
-        hit ||
-        fetch(e.request).then((res) => {
+    caches.match(e.request).then((hit) => {
+      const refresh = fetch(e.request)
+        .then((res) => {
           if (res.ok && url.origin === location.origin) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(e.request, copy));
           }
           return res;
         })
-    )
+        .catch(() => hit);
+      return hit || refresh;
+    })
   );
 });

@@ -317,6 +317,8 @@
       this.scale = ORB_MIN;
       this.running = true;
       this.paused = false;
+      this.anims.forEach((a) => a.cancel()); // leftovers from a finished run
+      this.anims = [];
       $("session-done").hidden = true;
       document.querySelector(".session-stage").style.display = "";
       setOrbScale(ORB_MIN);
@@ -342,6 +344,9 @@
 
       this.phaseDur = phase.seconds * 1000;
       this.phaseStart = performance.now();
+      // Cancel the previous phase's animations (hold shimmers run forever,
+      // fill:'forwards' ones stay retained) before starting the next.
+      this.anims.forEach((a) => a.cancel());
       this.anims = animateOrb(this.scale, target, this.phaseDur, phase.kind);
       this.scale = target;
 
@@ -411,6 +416,8 @@
     finish() {
       this.running = false;
       cancelAnimationFrame(this.raf);
+      this.anims.forEach((a) => a.cancel());
+      this.anims = [];
       wakeLock.release();
       const total = fmtDuration(seqDuration(this.seq));
       $("done-summary").textContent =
@@ -730,7 +737,12 @@
 
     // refresh stale auth token if present
     if (pb.authStore.isValid) {
-      pb.collection("users").authRefresh().catch(() => pb.authStore.clear());
+      pb.collection("users").authRefresh().catch(() => {
+        pb.authStore.clear();
+        state.mine = [];
+        renderAuthState();
+        renderHome();
+      });
     }
 
     await loadPresets();

@@ -20,7 +20,9 @@ func init() {
 			&core.TextField{Name: "description", Max: 500},
 			// phases: array of {kind: "inhale"|"hold"|"exhale", seconds: number}
 			&core.JSONField{Name: "phases", Required: true, MaxSize: 4096},
-			&core.NumberField{Name: "cycles", OnlyInt: true, Min: types.Pointer(0.0), Max: types.Pointer(500.0)},
+			// Required: PocketBase skips Min/Max on optional number fields when
+			// the value is 0 (zero counts as empty).
+			&core.NumberField{Name: "cycles", Required: true, OnlyInt: true, Min: types.Pointer(1.0), Max: types.Pointer(500.0)},
 			&core.BoolField{Name: "is_preset"},
 			&core.RelationField{Name: "owner", CollectionId: users.Id, MaxSelect: 1, CascadeDelete: true},
 			&core.AutodateField{Name: "created", OnCreate: true},
@@ -33,7 +35,12 @@ func init() {
 		col.ListRule = types.Pointer("is_preset = true || owner = @request.auth.id")
 		col.ViewRule = types.Pointer("is_preset = true || owner = @request.auth.id")
 		col.CreateRule = types.Pointer("@request.auth.id != '' && owner = @request.auth.id && is_preset = false")
-		col.UpdateRule = types.Pointer("owner = @request.auth.id && is_preset = false")
+		// The update rule is evaluated against the stored record, so the body
+		// must be constrained explicitly or a user could flip is_preset /
+		// re-assign owner on their own records.
+		col.UpdateRule = types.Pointer("owner = @request.auth.id && is_preset = false" +
+			" && (@request.body.is_preset:isset = false || @request.body.is_preset = false)" +
+			" && (@request.body.owner:isset = false || @request.body.owner = @request.auth.id)")
 		col.DeleteRule = types.Pointer("owner = @request.auth.id && is_preset = false")
 
 		return app.Save(col)
