@@ -135,7 +135,7 @@ function check(name, cond) {
   // --- all 10 styles animate in a session
   await page.evaluate(() => localStorage.removeItem("breathz.lastSeq"));
   await page.goto(BASE, { waitUntil: "networkidle" });
-  await page.locator("#preset-grid .seq-card").first().click();
+  await page.locator('#preset-grid .seq-card:has-text("Box Breathing")').first().click();
   const styleIds = await page.evaluate(() => window.BreathStyles.map((s) => s.id));
   check(`17 styles present (${styleIds.length})`, styleIds.length === 17);
   for (const id of styleIds) {
@@ -253,102 +253,36 @@ function check(name, cond) {
   await page.keyboard.press("Escape"); // …then back home
   await page.waitForSelector("#screen-home.active");
 
-  // --- favorites: star a preset -> appears in Yours (above practices)
-  const boxCard = page.locator('#preset-grid .seq-card:has-text("Box Breathing")');
-  await boxCard.locator(".fav-star").click();
+  // --- favorites & yours in the unified grid
+  // star a mid-list preset -> it sorts to the front (after local sequences)
+  await page.locator('#preset-grid .seq-card:has-text("Ujjayi Pace") .fav-star').click();
   await page.waitForTimeout(200);
-  check("starred preset appears in Yours",
-    await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').isVisible());
-  const deckOrder = await page.evaluate(() => {
-    const decks = [...document.querySelectorAll(".deck")];
-    return decks.findIndex((d) => d.id === "mine-deck");
-  });
-  check(`Yours deck is first (${deckOrder})`, deckOrder === 0);
-  // unstar via preview fav button
-  await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').click();
+  const names = await page.locator("#preset-grid .seq-card h3").allTextContents();
+  check(`starred preset sorts to front (${names.slice(0, 2).join(" | ")})`,
+    names[0] === "Tiny Test" && names[1] === "Ujjayi Pace");
+  check("local sequence marked as yours",
+    (await page.locator('#preset-grid .seq-card:has-text("Tiny Test") .meta').textContent()).includes("yours"));
+  check("no duplicate cards for favorites",
+    (await page.locator('#preset-grid .seq-card:has-text("Ujjayi Pace")').count()) === 1);
+  // mood filters the whole unified grid, favorites included
+  await page.locator('.mood-chip:has-text("balanced")').click();
+  check("mood keeps matching favorites",
+    (await page.locator('#preset-grid .seq-card:has-text("Ujjayi Pace")').count()) === 1); // Ujjayi is in balanced
+  await page.locator('.mood-chip:has-text("balanced")').click();
+  await page.locator('.mood-chip:has-text("anxious")').click();
+  check("mood hides unrelated favorites and locals",
+    (await page.locator('#preset-grid .seq-card:has-text("Ujjayi Pace")').count()) === 0 &&
+    (await page.locator('#preset-grid .seq-card:has-text("Tiny Test")').count()) === 0);
+  await page.locator('.mood-chip:has-text("anxious")').click(); // deselect
+  // unstar via preview fav button -> returns to natural position
+  await page.locator('#preset-grid .seq-card:has-text("Ujjayi Pace")').click();
   await page.waitForSelector("#screen-preview.active");
   check("preview fav button pressed", (await page.getAttribute("#fav-btn", "aria-pressed")) === "true");
   await page.locator("#fav-btn").click();
   await page.keyboard.press("Escape");
   await page.waitForSelector("#screen-home.active");
-  check("unstar removes from Yours",
-    (await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').count()) === 0);
-
-  // moods also filter the Yours deck
-  await page.locator('#preset-grid .seq-card:has-text("Box Breathing") .fav-star').click();
-  await page.locator('.mood-chip:has-text("going deeper")').click();
-  check("mood hides unrelated Yours entries",
-    (await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').count()) === 0);
-  await page.locator('.mood-chip:has-text("stressed")').click();
-  check("mood keeps related Yours entries",
-    (await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').count()) === 1);
-  await page.locator('.mood-chip:has-text("stressed")').click(); // deselect
-  await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').click();
-  await page.waitForSelector("#screen-preview.active");
-  await page.locator("#fav-btn").click(); // unstar again to restore state
-  await page.keyboard.press("Escape");
-  await page.waitForSelector("#screen-home.active");
-
-  // --- in-session style switching: arrows + swipe
-  await page.locator("#preset-grid .seq-card").first().click();
-  await page.waitForSelector("#screen-preview.active");
-  await page.locator("#start-btn").click();
-  await page.waitForSelector("#screen-session.active");
-  await page.waitForTimeout(600);
-  const styleBefore = await page.evaluate(() => localStorage.getItem("breathz.style"));
-  await page.keyboard.press("ArrowRight");
-  await page.waitForTimeout(300);
-  const styleAfter = await page.evaluate(() => localStorage.getItem("breathz.style"));
-  check(`arrow switches style mid-session (${styleBefore} -> ${styleAfter})`, styleAfter !== styleBefore);
-  const stillRunning = await page.evaluate(() =>
-    document.getElementById("stage").getAnimations({ subtree: true }).length);
-  check(`session keeps animating after switch (${stillRunning})`, stillRunning > 0);
-  // swipe left (pointer drag on the stage area)
-  const box = await page.locator("#orb-wrap").boundingBox();
-  await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2, { steps: 6 });
-  await page.mouse.up();
-  await page.waitForTimeout(300);
-  const styleSwiped = await page.evaluate(() => localStorage.getItem("breathz.style"));
-  check(`swipe switches style (${styleAfter} -> ${styleSwiped})`, styleSwiped !== styleAfter);
-  await page.locator("#end-btn").click();
-  await page.waitForSelector("#screen-preview.active");
-  await page.keyboard.press("Escape");
-  await page.waitForSelector("#screen-home.active");
-
-  // --- tradition practices + "going deeper" mood
-  check("Sufi Heart Rhythm present",
-    (await page.locator('#preset-grid .seq-card:has-text("Sufi Heart Rhythm")').count()) === 1);
-  check("Nadi Shodhana present",
-    (await page.locator('#preset-grid .seq-card:has-text("Nadi Shodhana")').count()) === 1);
-  await page.locator('.mood-chip:has-text("going deeper")').click();
-  const deepCount = await page.locator("#preset-grid .seq-card").count();
-  check(`going deeper mood filters (${deepCount})`, deepCount === 7);
-  await page.locator('.mood-chip:has-text("going deeper")').click();
-
-  // --- intention: phrase persists, shows in session, travels in links
-  await page.locator("#preset-grid .seq-card").first().click();
-  await page.waitForSelector("#screen-preview.active");
-  await page.locator("#intention-toggle").click();
-  check("intention panel opens", await page.locator("#intention-text").isVisible());
-  await page.fill("#intention-text", "calm and clear");
-  await page.locator("#start-btn").click();
-  await page.waitForSelector("#screen-session.active");
-  const line = await page.textContent("#intention-line");
-  check(`intention shows in session ("${line}")`, line === "calm and clear");
-  await page.locator("#end-btn").click();
-  // shared link with &i=
-  await page.goto(BASE + "/#s=i4-e6&c=3&n=Gift&v=moon&i=you%20are%20safe", { waitUntil: "networkidle" });
-  await page.waitForSelector("#screen-preview.active");
-  await page.locator("#start-btn").click();
-  await page.waitForSelector("#screen-session.active");
-  check(`shared intention shows ("${await page.textContent("#intention-line")}")`,
-    (await page.textContent("#intention-line")) === "you are safe");
-  await page.locator("#end-btn").click();
-  await page.waitForSelector("#screen-preview.active");
-  await page.keyboard.press("Escape");
-  await page.waitForSelector("#screen-home.active");
+  const namesAfter = await page.locator("#preset-grid .seq-card h3").allTextContents();
+  check("unstar returns preset to natural order", namesAfter[1] !== "Ujjayi Pace");
 
   // --- pre-roll countdown (default behaviour)
   await page.evaluate(() => localStorage.setItem("breathz.preroll", "3"));

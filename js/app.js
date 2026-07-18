@@ -508,7 +508,7 @@
     return `
       <h3>${escapeHTML(seq.name)}</h3>
       <div class="pattern">${patternHTML(seq)}</div>
-      <div class="meta">${practiceMeta(seq)}</div>`;
+      <div class="meta">${practiceMeta(seq)}${seq.source === "local" ? " · yours" : ""}</div>`;
   }
 
   function escapeHTML(s) {
@@ -549,12 +549,19 @@
     $("mood-note").textContent = mood ? mood.note : "";
   }
 
-  function visiblePresets() {
+  // One list for the whole home grid: your sequences first, then favorited
+  // presets, then the rest — a mood filters all of it together.
+  function homeList() {
     const mood = MOODS.find((m) => m.id === state.mood);
-    if (!mood) return PRESETS;
-    return mood.practices
-      .map((name) => PRESETS.find((p) => p.name === name))
-      .filter(Boolean);
+    const list = [
+      ...state.local,
+      ...PRESETS.filter(isFav),
+      ...PRESETS.filter((p) => !isFav(p)),
+    ];
+    if (!mood) return list;
+    return list
+      .filter((s) => mood.practices.includes(s.name))
+      .sort((a, b) => mood.practices.indexOf(a.name) - mood.practices.indexOf(b.name));
   }
 
   // Cards are divs with role=button (not <button>) so the favorite star can
@@ -586,19 +593,9 @@
     const mood = MOODS.find((m) => m.id === state.mood);
     $("deck-title").textContent = mood ? `for when you feel ${mood.label}` : "Practices";
 
-    // Yours: own creations + favorited presets, shown first. With a mood
-    // active it narrows to related practices, same as the deck below.
-    let yours = [...state.local, ...PRESETS.filter(isFav)];
-    if (mood) yours = yours.filter((s) => mood.practices.includes(s.name));
-    let cardIndex = 0;
-    $("mine-deck").hidden = yours.length === 0;
-    const mineGrid = $("mine-grid");
-    mineGrid.innerHTML = "";
-    for (const seq of yours) mineGrid.appendChild(makeCard(seq, cardIndex++));
-
     const grid = $("preset-grid");
     grid.innerHTML = "";
-    for (const seq of visiblePresets()) grid.appendChild(makeCard(seq, cardIndex++));
+    homeList().forEach((seq, idx) => grid.appendChild(makeCard(seq, idx)));
 
     const n = journal().length;
     $("foot-log").hidden = n === 0;
@@ -608,7 +605,7 @@
   // ------------------------------------------------ keyboard helpers
 
   function homeCards() {
-    return [...document.querySelectorAll("#preset-grid .seq-card, #mine-grid .seq-card")];
+    return [...document.querySelectorAll("#preset-grid .seq-card")];
   }
 
   // How many cards share the first row (the grid is auto-fill, so measure).
