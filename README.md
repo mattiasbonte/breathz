@@ -48,7 +48,6 @@ js/styles.js          the 11 breathing visuals (build/set/animate contract)
 css/app.css           design system; continuous animations touch only transform/opacity
 sw.js                 offline app shell
 tests/e2e/            Playwright suite (serve root on :8931, then `npm test`)
-docs/                 market & tech research from the incubation phase
 ```
 
 No framework, no build step, no dependencies. Animations run on the compositor thread (Web Animations API, transform/opacity only) for 60 fps and low battery drain.

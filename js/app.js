@@ -9,9 +9,11 @@
   const LS_SEQS = "breathz.sequences";
   const LS_SOUND = "breathz.sound";
   const LS_HAPTICS = "breathz.haptics";
+  const LS_VOL = "breathz.volume";
   const LS_STYLE = "breathz.style";
   const LS_LAST = "breathz.lastSeq";
   const LS_JOURNAL = "breathz.journal";
+  const LS_FAVS = "breathz.favorites";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const KIND_LABEL = { inhale: "in", hold: "hold", exhale: "out" };
@@ -108,14 +110,26 @@
 
   const state = {
     local: [],      // this-device sequences
+    favs: [],       // favorited preset names
     current: null,  // sequence shown in preview / session
     editing: null,  // sequence being edited in builder
     mood: null,     // selected mood id (per visit, deliberately not persisted)
     lastCardIndex: 0,
   };
 
-  function loadLocal() { state.local = readLS(LS_SEQS, []); }
+  function loadLocal() {
+    state.local = readLS(LS_SEQS, []);
+    state.favs = readLS(LS_FAVS, []);
+  }
   function saveLocal() { localStorage.setItem(LS_SEQS, JSON.stringify(state.local)); }
+
+  function isFav(seq) { return seq.source === "preset" && state.favs.includes(seq.name); }
+  function toggleFav(seq) {
+    const i = state.favs.indexOf(seq.name);
+    if (i >= 0) state.favs.splice(i, 1);
+    else state.favs.push(seq.name);
+    localStorage.setItem(LS_FAVS, JSON.stringify(state.favs));
+  }
 
   function homeSeq() {
     const last = readLS(LS_LAST, null);
@@ -200,6 +214,10 @@
   const audio = {
     ctx: null,
     enabled: localStorage.getItem(LS_SOUND) === "1",
+    volume: (() => {
+      const v = parseFloat(localStorage.getItem(LS_VOL));
+      return isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.6;
+    })(),
     ensure() {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext;
@@ -210,7 +228,7 @@
     },
     // A soft chime: gentle sine with slow attack/release. Different pitch per phase.
     cue(kind) {
-      if (!this.enabled) return;
+      if (!this.enabled || this.volume <= 0) return;
       this.ensure();
       if (!this.ctx) return;
       const freqs = { inhale: 392, hold: 329.63, exhale: 261.63 }; // G4, E4, C4
@@ -220,7 +238,7 @@
       osc.type = "sine";
       osc.frequency.value = freqs[kind] || 329.63;
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.08, t + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.13 * this.volume, t + 0.18);
       gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
       osc.connect(gain).connect(this.ctx.destination);
       osc.start(t);
@@ -244,6 +262,7 @@
     $("session-sound").setAttribute("aria-pressed", pressed);
     $("haptics-toggle").hidden = !haptics.supported;
     $("haptics-toggle").setAttribute("aria-pressed", haptics.enabled ? "true" : "false");
+    document.querySelectorAll(".vol-slider").forEach((s) => { s.value = audio.volume; });
   }
 
   function toggleSound() {
@@ -478,34 +497,46 @@
       .filter(Boolean);
   }
 
+  // Cards are divs with role=button (not <button>) so the favorite star can
+  // be a real button inside without invalid nesting.
+  function makeCard(seq, idx) {
+    const card = document.createElement("div");
+    card.className = "seq-card";
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.innerHTML = cardHTML(seq);
+    if (seq.source === "preset") {
+      const star = document.createElement("button");
+      star.className = "fav-star" + (isFav(seq) ? " faved" : "");
+      star.setAttribute("aria-label", isFav(seq) ? "Remove from yours" : "Add to yours");
+      star.innerHTML = "★";
+      star.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleFav(seq);
+        renderHome();
+      });
+      card.appendChild(star);
+    }
+    card.addEventListener("click", () => { state.lastCardIndex = idx; openPreview(seq); });
+    return card;
+  }
+
   function renderHome() {
     renderHomeHero();
     const mood = MOODS.find((m) => m.id === state.mood);
     $("deck-title").textContent = mood ? `for when you feel ${mood.label}` : "Practices";
 
+    // Yours: own creations + favorited presets, shown first.
+    const yours = [...state.local, ...PRESETS.filter(isFav)];
     let cardIndex = 0;
-    const grid = $("preset-grid");
-    grid.innerHTML = "";
-    for (const seq of visiblePresets()) {
-      const card = document.createElement("button");
-      card.className = "seq-card";
-      card.innerHTML = cardHTML(seq);
-      const idx = cardIndex++;
-      card.addEventListener("click", () => { state.lastCardIndex = idx; openPreview(seq); });
-      grid.appendChild(card);
-    }
-
-    $("mine-deck").hidden = state.local.length === 0;
+    $("mine-deck").hidden = yours.length === 0;
     const mineGrid = $("mine-grid");
     mineGrid.innerHTML = "";
-    for (const seq of state.local) {
-      const card = document.createElement("button");
-      card.className = "seq-card";
-      card.innerHTML = cardHTML(seq);
-      const idx = cardIndex++;
-      card.addEventListener("click", () => { state.lastCardIndex = idx; openPreview(seq); });
-      mineGrid.appendChild(card);
-    }
+    for (const seq of yours) mineGrid.appendChild(makeCard(seq, cardIndex++));
+
+    const grid = $("preset-grid");
+    grid.innerHTML = "";
+    for (const seq of visiblePresets()) grid.appendChild(makeCard(seq, cardIndex++));
   }
 
   // ------------------------------------------------ keyboard helpers
@@ -561,10 +592,22 @@
     updatePreviewDuration();
     $("edit-btn").hidden = false; // editing a preset saves a personal copy
     $("delete-btn").hidden = seq.source !== "local";
+    renderFavBtn();
     renderStylePicker();
     show("preview");
     styleDemo.start($("demo-stage"), demoPace(state.current));
     $("start-btn").focus({ preventScroll: true });
+  }
+
+  function renderFavBtn() {
+    const seq = state.current;
+    const btn = $("fav-btn");
+    btn.hidden = !seq || seq.source !== "preset";
+    if (btn.hidden) return;
+    const faved = isFav(seq);
+    btn.setAttribute("aria-pressed", faved ? "true" : "false");
+    btn.classList.toggle("faved", faved);
+    btn.title = faved ? "Remove from yours" : "Add to yours";
   }
 
   function updatePreviewDuration() {
@@ -733,7 +776,119 @@
     },
   };
 
+  // ---------------------------------------------------------- text format
+  // A forgiving plain-text sequence format, so sessions can be written or
+  // generated as text and pasted in. Accepted in one textarea:
+  //   name: Evening wind-down       (optional)
+  //   cycles: 8                     (optional)
+  //   in 4 / hold 7 / out 8         (one phase per line; i/h/e work too)
+  // …or a JSON object, or a compact pattern: "i4-h7-e8", or bare "4-7-8"
+  // (2 numbers = in-out, 3 = in-hold-out, 4 = in-hold-out-hold).
+
+  const TEXT_KINDS = {
+    i: "inhale", in: "inhale", inhale: "inhale",
+    h: "hold", hold: "hold", pause: "hold",
+    e: "exhale", ex: "exhale", out: "exhale", exhale: "exhale",
+  };
+  const BARE_PATTERNS = {
+    2: ["inhale", "exhale"],
+    3: ["inhale", "hold", "exhale"],
+    4: ["inhale", "hold", "exhale", "hold"],
+  };
+
+  function seqToText(seq) {
+    const lines = [`name: ${seq.name || "My sequence"}`, `cycles: ${seq.cycles}`, ""];
+    for (const p of seq.phases) lines.push(`${KIND_SHORT[p.kind]} ${fmtSecs(p.seconds)}`);
+    return lines.join("\n");
+  }
+
+  function parsePattern(line) {
+    const toks = line.split("-").map((t) => t.trim());
+    const parsed = [];
+    for (const t of toks) {
+      const m = t.match(/^([a-z]+)?\s*(\d+(?:\.\d+)?)$/i);
+      if (!m) return null;
+      const kind = m[1] ? TEXT_KINDS[m[1].toLowerCase()] : null;
+      if (m[1] && !kind) return null;
+      parsed.push({ kind, seconds: Math.round(parseFloat(m[2]) * 10) / 10 });
+    }
+    if (parsed.every((p) => p.kind)) return parsed;
+    if (parsed.every((p) => !p.kind) && BARE_PATTERNS[parsed.length]) {
+      return parsed.map((p, i) => ({ kind: BARE_PATTERNS[parsed.length][i], seconds: p.seconds }));
+    }
+    return null;
+  }
+
+  function textToSeq(text) {
+    text = (text || "").trim();
+    if (!text) return { error: "Nothing to read yet." };
+
+    if (text.startsWith("{")) {
+      try {
+        const o = JSON.parse(text);
+        const seq = {
+          name: String(o.name || "My sequence").slice(0, 100),
+          cycles: parseInt(o.cycles, 10) || 10,
+          phases: (Array.isArray(o.phases) ? o.phases : []).map((p) => ({
+            kind: TEXT_KINDS[String(p.kind || "").toLowerCase()],
+            seconds: Math.round(Number(p.seconds) * 10) / 10,
+          })),
+        };
+        const err = validateSequence(seq);
+        return err ? { error: err } : { seq };
+      } catch { return { error: "That JSON doesn't parse." }; }
+    }
+
+    const seq = { name: "My sequence", cycles: 10, phases: [] };
+    let sawName = false;
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line || line.startsWith("#")) continue;
+      let m;
+      if ((m = line.match(/^name\s*:\s*(.+)$/i))) { seq.name = m[1].trim().slice(0, 100); sawName = true; continue; }
+      if ((m = line.match(/^cycles\s*:\s*(\d+)\s*$/i))) { seq.cycles = parseInt(m[1], 10); continue; }
+      if ((m = line.match(/^([a-z]+)[\s:]+(\d+(?:\.\d+)?)\s*(?:s(?:ec(?:onds)?)?)?$/i)) && TEXT_KINDS[m[1].toLowerCase()]) {
+        seq.phases.push({ kind: TEXT_KINDS[m[1].toLowerCase()], seconds: Math.round(parseFloat(m[2]) * 10) / 10 });
+        continue;
+      }
+      const pattern = parsePattern(line);
+      if (pattern) { seq.phases.push(...pattern); continue; }
+      return { error: `Can't read this line: “${line}”` };
+    }
+    if (!sawName && seq.phases.length) {
+      const secs = seq.phases.map((p) => fmtSecs(p.seconds)).join("-");
+      seq.name = secs.length <= 20 ? `${secs} breath` : "My sequence";
+    }
+    const err = validateSequence(seq);
+    return err ? { error: err } : { seq };
+  }
+
   // ---------------------------------------------------------- builder
+
+  let builderMode = "visual";
+
+  function setBuilderMode(mode) {
+    if (mode === "text" && builderMode === "visual") {
+      // capture slider state into the text
+      state.editing.name = $("builder-name").value.trim() || "";
+      state.editing.cycles = Math.min(500, Math.max(1, parseInt($("builder-cycles").value, 10) || 10));
+      $("builder-text").value = seqToText({ ...state.editing, name: state.editing.name || "My sequence" });
+    }
+    if (mode === "visual" && builderMode === "text") {
+      const r = textToSeq($("builder-text").value);
+      if (r.error) { $("builder-error").textContent = r.error; return; } // stay in text mode
+      Object.assign(state.editing, r.seq);
+      $("builder-name").value = state.editing.name;
+      $("builder-cycles").value = state.editing.cycles;
+      renderPhaseRows();
+    }
+    builderMode = mode;
+    $("builder-visual").hidden = mode === "text";
+    $("builder-text-field").hidden = mode === "visual";
+    $("builder-mode-toggle").textContent = mode === "text" ? "edit with sliders" : "edit as text";
+    $("builder-error").textContent = "";
+    if (mode === "text") $("builder-text").focus({ preventScroll: true });
+  }
 
   function openBuilder(seq) {
     state.editing = seq
@@ -744,6 +899,10 @@
     $("builder-cycles").value = state.editing.cycles;
     $("builder-error").textContent = "";
     $("builder-note").textContent = "Sequences are saved in this browser — share one as a link to keep it anywhere.";
+    builderMode = "visual";
+    $("builder-visual").hidden = false;
+    $("builder-text-field").hidden = true;
+    $("builder-mode-toggle").textContent = "edit as text";
     renderPhaseRows();
     show("builder");
     $("builder-name").focus({ preventScroll: true });
@@ -785,6 +944,12 @@
 
   function builderCollect() {
     const seq = state.editing;
+    if (builderMode === "text") {
+      const r = textToSeq($("builder-text").value);
+      if (r.error) { $("builder-error").textContent = r.error; return null; }
+      Object.assign(seq, r.seq);
+      return seq;
+    }
     seq.name = $("builder-name").value.trim() || "My sequence";
     seq.cycles = Math.min(500, Math.max(1, parseInt($("builder-cycles").value, 10) || 10));
     return seq;
@@ -792,6 +957,7 @@
 
   function builderSave() {
     const seq = builderCollect();
+    if (!seq) return;
     const err = validateSequence(seq);
     if (err) { $("builder-error").textContent = err; return; }
     $("builder-error").textContent = "";
@@ -818,6 +984,24 @@
 
     $("sound-toggle").addEventListener("click", toggleSound);
     $("session-sound").addEventListener("click", toggleSound);
+
+    document.querySelectorAll(".vol-slider").forEach((slider) =>
+      slider.addEventListener("input", () => {
+        audio.volume = parseFloat(slider.value);
+        localStorage.setItem(LS_VOL, String(audio.volume));
+        // dragging the volume implies wanting sound
+        if (!audio.enabled && audio.volume > 0) {
+          audio.enabled = true;
+          localStorage.setItem(LS_SOUND, "1");
+        }
+        renderToggles();
+        // audible feedback while dragging, lightly throttled
+        const now = performance.now();
+        if (!slider._lastCue || now - slider._lastCue > 350) {
+          slider._lastCue = now;
+          audio.cue("hold");
+        }
+      }));
 
     $("haptics-toggle").addEventListener("click", () => {
       haptics.enabled = !haptics.enabled;
@@ -855,6 +1039,11 @@
       } catch (e) {
         if (e?.name !== "AbortError") prompt("Copy this link:", url);
       }
+    });
+    $("fav-btn").addEventListener("click", () => {
+      toggleFav(state.current);
+      renderFavBtn();
+      toast(isFav(state.current) ? "Added to yours" : "Removed from yours");
     });
     $("edit-btn").addEventListener("click", () => openBuilder(state.current));
     $("delete-btn").addEventListener("click", () => {
@@ -896,9 +1085,24 @@
     $("builder-save").addEventListener("click", builderSave);
     $("builder-try").addEventListener("click", () => {
       const seq = builderCollect();
+      if (!seq) return;
       const err = validateSequence(seq);
       if (err) { $("builder-error").textContent = err; return; }
       openPreview(seq);
+    });
+    $("builder-mode-toggle").addEventListener("click", () =>
+      setBuilderMode(builderMode === "text" ? "visual" : "text"));
+    $("builder-text").addEventListener("input", () => {
+      const r = textToSeq($("builder-text").value);
+      if (r.error) {
+        $("builder-error").textContent = r.error;
+        $("builder-summary").textContent = "";
+      } else {
+        $("builder-error").textContent = "";
+        const dur = seqDuration(r.seq);
+        $("builder-summary").textContent =
+          `One cycle: ${fmtDuration(dur / r.seq.cycles)} · full session: ${fmtDuration(dur)}`;
+      }
     });
 
     // ---- full keyboard navigation ----
@@ -942,7 +1146,11 @@
         else if (e.code === "ArrowLeft") { e.preventDefault(); moveCardFocus(-1); }
         else if (e.code === "ArrowDown") { e.preventDefault(); moveCardFocus(cols); }
         else if (e.code === "ArrowUp") { e.preventDefault(); moveCardFocus(-cols); }
-        else if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); $("home-begin").click(); }
+        else if (e.code === "Space" || e.code === "Enter") {
+          e.preventDefault();
+          if (t.classList?.contains("seq-card")) t.click();
+          else $("home-begin").click();
+        }
         else if (e.key === "n" || e.key === "N") { e.preventDefault(); openBuilder(null); }
       } else if (screen === "preview") {
         const beginSession = () => {

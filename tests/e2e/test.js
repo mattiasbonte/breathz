@@ -182,6 +182,97 @@ function check(name, cond) {
   await page.locator("#end-btn").click();
   await page.waitForSelector("#screen-preview.active");
 
+  // --- session mute + volume slider
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#screen-session.active");
+  check("session mute button visible", await page.locator("#session-sound").isVisible());
+  await page.locator("#session-sound").click();
+  check("session mute toggles + header syncs",
+    (await page.getAttribute("#session-sound", "aria-pressed")) === "true" &&
+    (await page.getAttribute("#sound-toggle", "aria-pressed")) === "true");
+  await page.keyboard.press("m");
+  check("M key mutes during session",
+    (await page.getAttribute("#session-sound", "aria-pressed")) === "false");
+  await page.locator(".session-sound").hover();
+  await page.waitForTimeout(500);
+  const sessionSlider = page.locator("#screen-session .vol-slider");
+  check("volume slider appears on hover", await sessionSlider.isVisible());
+  await sessionSlider.fill("0.9");
+  const vol = await page.evaluate(() => localStorage.getItem("breathz.volume"));
+  const unmuted = await page.getAttribute("#session-sound", "aria-pressed");
+  check(`volume persists (${vol}) and dragging unmutes`, vol === "0.9" && unmuted === "true");
+  await page.locator("#end-btn").click();
+  await page.waitForSelector("#screen-preview.active");
+
+  // --- text editor: line format, bare pattern, JSON
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+  await page.locator("#new-sequence-btn").click();
+  await page.waitForSelector("#screen-builder.active");
+  await page.locator("#builder-mode-toggle").click();
+  check("text mode shows textarea", await page.locator("#builder-text").isVisible());
+  const roundtrip = await page.inputValue("#builder-text");
+  check("textarea prefilled from sliders", roundtrip.includes("in 4") && roundtrip.includes("cycles: 10"));
+  await page.fill("#builder-text", "name: Text Made\ncycles: 3\nin 4\nhold 7\nout 8");
+  check("live summary parses text", (await page.textContent("#builder-summary")).includes("full session"));
+  await page.locator("#builder-try").click();
+  await page.waitForSelector("#screen-preview.active");
+  check("text sequence opens preview", (await page.textContent("#preview-name")) === "Text Made");
+  const chips478 = await page.locator("#preview-pattern .chip").count();
+  check(`text phases correct (${chips478})`, chips478 === 3);
+
+  // bare pattern "4-7-8"
+  await page.keyboard.press("Escape");
+  await page.locator("#new-sequence-btn").click();
+  await page.locator("#builder-mode-toggle").click();
+  await page.fill("#builder-text", "4-7-8");
+  await page.locator("#builder-try").click();
+  await page.waitForSelector("#screen-preview.active");
+  check("bare pattern 4-7-8 parses as in-hold-out",
+    (await page.locator("#preview-pattern .chip").count()) === 3);
+
+  // JSON paste
+  await page.keyboard.press("Escape");
+  await page.locator("#new-sequence-btn").click();
+  await page.locator("#builder-mode-toggle").click();
+  await page.fill("#builder-text",
+    '{"name":"JSON Made","cycles":4,"phases":[{"kind":"in","seconds":3},{"kind":"out","seconds":5}]}');
+  await page.locator("#builder-try").click();
+  await page.waitForSelector("#screen-preview.active");
+  check("JSON paste works", (await page.textContent("#preview-name")) === "JSON Made");
+
+  // bad input surfaces an error
+  await page.keyboard.press("Escape");
+  await page.locator("#new-sequence-btn").click();
+  await page.locator("#builder-mode-toggle").click();
+  await page.fill("#builder-text", "in 4\nbanana 7");
+  const parseErr = await page.textContent("#builder-error");
+  check(`bad line surfaces error ("${parseErr.slice(0, 30)}…")`, parseErr.includes("banana"));
+  await page.keyboard.press("Escape"); // blur textarea…
+  await page.keyboard.press("Escape"); // …then back home
+  await page.waitForSelector("#screen-home.active");
+
+  // --- favorites: star a preset -> appears in Yours (above practices)
+  const boxCard = page.locator('#preset-grid .seq-card:has-text("Box Breathing")');
+  await boxCard.locator(".fav-star").click();
+  await page.waitForTimeout(200);
+  check("starred preset appears in Yours",
+    await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').isVisible());
+  const deckOrder = await page.evaluate(() => {
+    const decks = [...document.querySelectorAll(".deck")];
+    return decks.findIndex((d) => d.id === "mine-deck");
+  });
+  check(`Yours deck is first (${deckOrder})`, deckOrder === 0);
+  // unstar via preview fav button
+  await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').click();
+  await page.waitForSelector("#screen-preview.active");
+  check("preview fav button pressed", (await page.getAttribute("#fav-btn", "aria-pressed")) === "true");
+  await page.locator("#fav-btn").click();
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+  check("unstar removes from Yours",
+    (await page.locator('#mine-grid .seq-card:has-text("Box Breathing")').count()) === 0);
+
   // --- pwa bits
   const swCount = await page.evaluate(async () =>
     (await navigator.serviceWorker.getRegistrations()).length);
