@@ -259,6 +259,15 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   box-shadow: 0 0 8px rgba(125, 211, 252, 0.5);
   cursor: pointer;
 }
+/* past 100%: the thumb warms up */
+.vol-slider.boost::-webkit-slider-thumb {
+  background: #fcd34d;
+  box-shadow: 0 0 10px rgba(252, 211, 77, 0.6);
+}
+.vol-slider.boost::-moz-range-thumb {
+  background: #fcd34d;
+  box-shadow: 0 0 10px rgba(252, 211, 77, 0.6);
+}
 .vol-slider::-moz-range-track {
   height: 3px;
   border-radius: 999px;

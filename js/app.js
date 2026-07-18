@@ -214,9 +214,10 @@
   const audio = {
     ctx: null,
     enabled: localStorage.getItem(LS_SOUND) === "1",
+    // 0..2 — up to 1 is the comfortable range, above overcranks the cue gain
     volume: (() => {
       const v = parseFloat(localStorage.getItem(LS_VOL));
-      return isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.6;
+      return isFinite(v) ? Math.min(2, Math.max(0, v)) : 0.6;
     })(),
     ensure() {
       if (!this.ctx) {
@@ -262,7 +263,10 @@
     $("session-sound").setAttribute("aria-pressed", pressed);
     $("haptics-toggle").hidden = !haptics.supported;
     $("haptics-toggle").setAttribute("aria-pressed", haptics.enabled ? "true" : "false");
-    document.querySelectorAll(".vol-slider").forEach((s) => { s.value = audio.volume; });
+    document.querySelectorAll(".vol-slider").forEach((s) => {
+      s.value = audio.volume;
+      s.classList.toggle("boost", audio.volume > 1);
+    });
   }
 
   function toggleSound() {
