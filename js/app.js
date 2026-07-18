@@ -242,7 +242,7 @@
     },
     // Directional cues: inhale glides up, exhale glides down, hold is a
     // level suspended shimmer (two barely-detuned tones beating slowly).
-    cue(kind) {
+    cue(kind, stacked) {
       if (!this.enabled || this.volume <= 0) return;
       this.ensure();
       if (!this.ctx) return;
@@ -263,11 +263,13 @@
       };
 
       if (kind === "inhale") {
+        if (stacked) { note(392, t, peak * 0.9, 0.9); return; } // one short sip on top (G4)
         // two warm notes stepping up — direction without a siren-like sweep
         note(261.63, t, peak * 0.7);         // C4…
         note(329.63, t + 0.22, peak);        // …E4
         return;
       } else if (kind === "exhale") {
+        if (stacked) { note(233.08, t, peak * 0.9, 1.1); return; } // short settling Bb3
         note(329.63, t, peak * 0.7);         // E4…
         note(261.63, t + 0.26, peak, 1.6);   // …settling on C4
         return;
@@ -743,6 +745,30 @@
           }
         }
       });
+      // Precompute breath levels. A run of consecutive same-kind phases
+      // (e.g. the physiological sigh's double inhale) shares the range,
+      // weighted by duration: big swell first, then the sip tops it up —
+      // so stacked phases are visible instead of reading as a stutter.
+      let lvl = 0;
+      for (let i = 0; i < this.flat.length; i++) {
+        const p = this.flat[i];
+        if (p.fromLevel !== undefined) { lvl = p.toLevel; continue; }
+        if (p.kind === "hold") { p.fromLevel = p.toLevel = lvl; continue; }
+        let j = i;
+        while (j < this.flat.length && this.flat[j].kind === p.kind) j++;
+        const run = this.flat.slice(i, j);
+        const total = run.reduce((a, e) => a + e.seconds, 0);
+        const start = lvl;
+        const target = p.kind === "inhale" ? 1 : 0;
+        let done = 0;
+        run.forEach((e, k) => {
+          e.stacked = k > 0;
+          e.fromLevel = start + (target - start) * (done / total);
+          done += e.seconds;
+          e.toLevel = start + (target - start) * (done / total);
+        });
+        lvl = run[run.length - 1].toLevel;
+      }
       this.idx = 0;
       this.level = 0;
       this.running = true;
@@ -785,16 +811,17 @@
       if (this.idx >= this.flat.length) return this.finish();
 
       const phase = this.flat[this.idx];
-      const target = phase.kind === "inhale" ? 1
+      const target = phase.toLevel ?? (phase.kind === "inhale" ? 1
                    : phase.kind === "exhale" ? 0
-                   : this.level;
+                   : this.level);
+      this.level = phase.fromLevel ?? this.level;
 
       $("phase-label").textContent = KIND_LABEL[phase.kind];
       $("cycle-indicator").textContent = this.phaseIndicator(phase);
       $("next-up").textContent = phase.nextTitle ? `then · ${phase.nextTitle}` : "";
       $("next-up").hidden = !phase.nextTitle;
       $("hold-release").hidden = !phase.open;
-      audio.cue(phase.kind);
+      audio.cue(phase.kind, phase.stacked);
       haptics.pulse(phase.kind);
 
       this.phaseDur = phase.open ? Infinity : phase.seconds * 1000;

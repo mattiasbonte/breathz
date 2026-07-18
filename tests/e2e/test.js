@@ -458,6 +458,26 @@ function check(name, cond) {
   await page.keyboard.press("Escape");
   await page.waitForSelector("#screen-home.active");
 
+  // --- stacked phases (physiological sigh): second inhale visibly tops up
+  await page.goto(BASE + "/#s=i1.5-i1-e2&c=2&n=Sigh%20Test&v=orb", { waitUntil: "networkidle" });
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#screen-session.active");
+  const scaleAt = async () => page.evaluate(() => {
+    const m = getComputedStyle(document.querySelector("#stage .orb")).transform;
+    return m.startsWith("matrix") ? parseFloat(m.slice(7)) : 1;
+  });
+  await page.waitForTimeout(1350); // near end of the big inhale
+  const s1 = await scaleAt();
+  await page.waitForTimeout(1000); // near end of the sip
+  const s2 = await scaleAt();
+  check(`double inhale grows in two steps (${s1.toFixed(2)} -> ${s2.toFixed(2)})`,
+    s1 > 0.7 && s2 > s1 + 0.03);
+  await page.locator("#end-btn").click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+
   // --- pwa bits
   const swCount = await page.evaluate(async () =>
     (await navigator.serviceWorker.getRegistrations()).length);
