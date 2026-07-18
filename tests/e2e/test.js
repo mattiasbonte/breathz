@@ -443,14 +443,17 @@ function check(name, cond) {
   await page.locator("#done-home-btn").click();
   await page.waitForSelector("#screen-home.active");
 
-  // --- QR code dialog
+  // --- share dialog: QR + copy + native share in one place
   await page.locator("#preset-grid .seq-card").first().click();
   await page.waitForSelector("#screen-preview.active");
-  await page.locator("#qr-btn").click();
+  await page.locator("#share-btn").click();
   await page.waitForSelector(".qr-dialog[open]");
   const qrSvg = await page.locator("#qr-holder svg").count();
   const qrCaption = await page.textContent("#qr-caption");
-  check(`QR renders (svg=${qrSvg}, "${qrCaption}")`, qrSvg === 1 && qrCaption.length > 0);
+  check(`share dialog shows QR (svg=${qrSvg}, "${qrCaption}")`, qrSvg === 1 && qrCaption.length > 0);
+  await page.locator("#share-copy").click();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  check(`share dialog copies link (${copied.slice(0, 30)}…)`, copied.includes("#s=") && copied.includes("&v="));
   await page.locator("#qr-close").click();
   await page.keyboard.press("Escape");
   await page.waitForSelector("#screen-home.active");

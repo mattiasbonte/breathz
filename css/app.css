@@ -35,9 +35,25 @@ html, body {
 
 html { background: var(--bg-0); }
 
+/* the ambient gradient lives on a fixed, viewport-sized layer — a tiling
+   `background-attachment: fixed` gradient on body drew a faint seam at
+   every viewport-height boundary on tall pages */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2; /* behind the aurora blobs (-1) */
+  background: radial-gradient(120% 90% at 20% 0%, var(--bg-1) 0%, var(--bg-0) 55%);
+  pointer-events: none;
+}
+
 body {
   font-family: var(--font);
-  background: radial-gradient(120% 90% at 20% 0%, var(--bg-1) 0%, var(--bg-0) 55%) fixed;
+  background: var(--bg-0);
+  /* own stacking context: the fixed ambient layers (aurora, ::before) have
+     negative z-index and must paint above body's background — without this
+     they only show below body's 100%-height box, drawing a hard seam there */
+  isolation: isolate;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;

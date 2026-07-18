@@ -1136,27 +1136,26 @@
       if (err) { toast(err); return; }
       session.start(state.current);
     });
-    $("share-btn").addEventListener("click", async () => {
-      const url = encodeShare(state.current);
-      try {
-        if (navigator.share) {
-          await navigator.share({ title: `${state.current.name} — breathz`, url });
-        } else {
-          await navigator.clipboard.writeText(url);
-          toast("Link copied — share your rhythm");
-        }
-      } catch (e) {
-        if (e?.name !== "AbortError") prompt("Copy this link:", url);
-      }
-    });
-    $("qr-btn").addEventListener("click", () => {
+    // Share opens one dialog holding everything: QR, copy, native share
+    $("share-btn").addEventListener("click", () => {
       const url = encodeShare(state.current);
       const qr = window.qrcode(0, "M"); // type 0 = auto-size
       qr.addData(url);
       qr.make();
       $("qr-holder").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
       $("qr-caption").textContent = state.current.name;
+      $("share-native").hidden = !navigator.share;
       $("qr-dialog").showModal();
+    });
+    $("share-copy").addEventListener("click", async () => {
+      const url = encodeShare(state.current);
+      try { await navigator.clipboard.writeText(url); toast("Link copied — share your rhythm"); }
+      catch { prompt("Copy this link:", url); }
+    });
+    $("share-native").addEventListener("click", async () => {
+      const url = encodeShare(state.current);
+      try { await navigator.share({ title: `${state.current.name} — breathz`, url }); }
+      catch { /* dismissed */ }
     });
     $("qr-close").addEventListener("click", () => $("qr-dialog").close());
     $("qr-dialog").addEventListener("click", (e) => {
