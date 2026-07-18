@@ -14,8 +14,18 @@ const favicon = readFileSync("icons/favicon.svg").toString("base64");
 const replaced = [];
 function swap(from, to, label) {
   if (!html.includes(from)) throw new Error(`missing marker: ${label}`);
-  html = html.replace(from, to);
+  // replacement as a function: String.replace treats $', $&, $` in a plain
+  // replacement string as patterns — the QR lib's literal `'$'` once spliced
+  // the rest of the document into the middle of the inlined script
+  html = html.replace(from, () => to);
   replaced.push(label);
+}
+
+// A literal "</script" inside inlined JS (the QR library has them in strings)
+// terminates the <script> element at HTML-parse time and corrupts the page.
+// Backslash-escaping is a no-op inside JS strings and keeps the HTML intact.
+function inlineSafe(js) {
+  return js.replace(/<\/script/gi, "<\\/script").replace(/<!--/g, "<\\!--");
 }
 
 const png192 = readFileSync("icons/icon-192.png").toString("base64");
@@ -43,12 +53,19 @@ const manifest = {
 swap('<link rel="manifest" href="manifest.webmanifest">',
   `<link rel="manifest" href="data:application/manifest+json;base64,${Buffer.from(JSON.stringify(manifest)).toString("base64")}">`,
   "manifest");
-swap('<script src="js/qr.js"></script>', `<script>\n${qr}\n</script>`, "qr.js");
-swap('<script src="js/styles.js"></script>', `<script>\n${styles}\n</script>`, "styles.js");
-swap('<script src="js/model.js"></script>', `<script>\n${model}\n</script>`, "model.js");
-swap('<script src="js/app.js"></script>', `<script>\n${app}\n</script>`, "app.js");
+swap('<script src="js/qr.js"></script>', `<script>\n${inlineSafe(qr)}\n</script>`, "qr.js");
+swap('<script src="js/styles.js"></script>', `<script>\n${inlineSafe(styles)}\n</script>`, "styles.js");
+swap('<script src="js/model.js"></script>', `<script>\n${inlineSafe(model)}\n</script>`, "model.js");
+swap('<script src="js/app.js"></script>', `<script>\n${inlineSafe(app)}\n</script>`, "app.js");
 // no sw.js next to a single file — skip registration cleanly
 html = html.replace('navigator.serviceWorker.register("sw.js")', "Promise.resolve()");
+
+// guard: every <script> must close exactly once at HTML-parse level
+const opens = (html.match(/<script[\s>]/g) || []).length;
+const closes = (html.match(/<\/script>/g) || []).length;
+if (opens !== closes) {
+  throw new Error(`script tag imbalance: ${opens} opens vs ${closes} closes — inlined JS is corrupting the HTML`);
+}
 
 mkdirSync("dist", { recursive: true });
 writeFileSync("dist/breathz.html", html);
