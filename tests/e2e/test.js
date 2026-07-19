@@ -579,6 +579,13 @@ function check(name, cond) {
     await page.locator("#vision-backdrop").isVisible());
   check("backdrop layers carry the image",
     await page.evaluate(() => document.getElementById("vb-clear").style.backgroundImage.startsWith("url")));
+  const ms = await page.evaluate(() => ({
+    title: navigator.mediaSession?.metadata?.title, state: navigator.mediaSession?.playbackState,
+  }));
+  check(`media session announces the practice (${ms.title})`,
+    ms.title === "Coherent Breathing" && ms.state === "playing");
+  const endBg = await page.evaluate(() => getComputedStyle(document.getElementById("end-btn")).backgroundColor);
+  check(`session buttons carry their own floor (${endBg})`, endBg.includes("rgba(10, 14, 31"));
   await page.waitForTimeout(1600);
   const clarity1 = await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById("vb-clear")).opacity));
   check(`vision clarity breath-coupled (${clarity1.toFixed(2)})`, clarity1 > 0.06);
@@ -628,6 +635,20 @@ function check(name, cond) {
   }));
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+
+  // --- photo-proof contrast: the done card deepens the backdrop scrim
+  await page.goto(BASE + "/#s=i1-e1&c=1&v=orb&n=Scrim%20Test", { waitUntil: "networkidle" });
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#session-done:not([hidden])", { timeout: 15000 });
+  await page.waitForTimeout(800); // the veil eases in over 0.6s
+  const scrim = await page.evaluate(() =>
+    getComputedStyle(document.querySelector(".vision-backdrop"), "::after").backgroundColor);
+  check(`done card deepens the scrim (${scrim})`, scrim.includes("0.74"));
+  check("media session cleared after the session",
+    await page.evaluate(() => navigator.mediaSession?.playbackState !== "playing"));
+  await page.locator("#done-home-btn").click();
   await page.waitForSelector("#screen-home.active");
   await page.evaluate(() => { localStorage.removeItem("breathz.visionImage"); localStorage.removeItem("breathz.visionBackdrop"); localStorage.removeItem("breathz.visionFocus"); localStorage.removeItem("breathz.visionZoom"); });
 

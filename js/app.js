@@ -363,8 +363,34 @@
         if (!AC) { this.enabled = false; return; }
         this.ctx = new AC();
       }
-      if (this.ctx.state === "suspended") this.ctx.resume();
+      if (this.ctx.state !== "running") this.ctx.resume().catch(() => {});
     },
+
+    // A silent looping <audio> marks the tab as playing media: phones then
+    // keep the audio context and (coarsened) timers alive under a locked
+    // screen instead of freezing the session. Only while cues are audible —
+    // silence must never steal audio focus from someone's own music.
+    keepAlive: null,
+    holdOpen() {
+      if (!this.enabled || this.volume <= 0) return;
+      // iOS 16.4+: declare ourselves a playback session so WebAudio keeps
+      // sounding with the screen locked (and past the mute switch)
+      try { if ("audioSession" in navigator) navigator.audioSession.type = "playback"; } catch { /* older iOS */ }
+      if (!this.keepAlive) {
+        const rate = 8000, n = rate; // one second of 16-bit silence
+        const buf = new ArrayBuffer(44 + n * 2);
+        const v = new DataView(buf);
+        const tag = (o, s) => [...s].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0)));
+        tag(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); tag(8, "WAVE");
+        tag(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+        v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+        tag(36, "data"); v.setUint32(40, n * 2, true); // sample bytes stay zero
+        this.keepAlive = new Audio(URL.createObjectURL(new Blob([buf], { type: "audio/wav" })));
+        this.keepAlive.loop = true;
+      }
+      this.keepAlive.play().catch(() => { /* no gesture yet — retried on start */ });
+    },
+    letGo() { this.keepAlive?.pause(); },
     // Directional cues: inhale glides up, exhale glides down, hold is a
     // level suspended shimmer (two barely-detuned tones beating slowly).
     cue(kind, stacked, seconds) {
@@ -452,6 +478,7 @@
     audio.enabled = !audio.enabled;
     localStorage.setItem(LS_SOUND, audio.enabled ? "1" : "0");
     if (audio.enabled) { audio.ensure(); audio.cue("hold"); }
+    if (session.running) audio.enabled ? audio.holdOpen() : audio.letGo();
     renderToggles();
   }
 
@@ -470,9 +497,31 @@
     },
   };
 
+  const media = {
+    set(title) {
+      if (!("mediaSession" in navigator)) return;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({ title, artist: "breathz" });
+        navigator.mediaSession.setActionHandler("play", () => session.resume());
+        navigator.mediaSession.setActionHandler("pause", () => session.pause());
+        navigator.mediaSession.setActionHandler("stop", () => session.stop());
+        navigator.mediaSession.playbackState = "playing";
+      } catch { /* metadata is a nicety */ }
+    },
+    state(s) {
+      try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = s; } catch {}
+    },
+    clear() {
+      if (!("mediaSession" in navigator)) return;
+      try { navigator.mediaSession.playbackState = "none"; navigator.mediaSession.metadata = null; } catch {}
+    },
+  };
+
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && session.running && !session.paused) {
       wakeLock.acquire();
+      // iOS marks the context "interrupted" while locked — pick it back up
+      if (audio.enabled) { audio.ensure(); audio.holdOpen(); }
     }
   });
 
@@ -1072,6 +1121,8 @@
       $("pause-btn").textContent = t("pause");
       wakeLock.acquire();
       audio.ensure();
+      audio.holdOpen(); // inside the tap that started the session
+      media.set(dn(this.loc));
       // grounding: how to actually breathe this one, before any counting
       const setup = this.loc.guide?.setup || [t("groundGeneric1"), t("groundGeneric2")];
       if (localStorage.getItem("breathz.ground") !== "0") {
@@ -1142,7 +1193,11 @@
       haptics.pulse(phase.kind);
 
       this.phaseDur = phase.open ? Infinity : phase.seconds * 1000;
-      this.phaseStart = performance.now();
+      // carry lateness from a throttled background timer into this phase,
+      // so total session time stays true even at 1s background granularity
+      const lag = Math.min(1500, this._lag || 0);
+      this._lag = 0;
+      this.phaseStart = performance.now() - lag;
       this.phaseFrom = this.level;
       this.phaseTo = target;
       // Cancel the previous phase's animations (hold shimmers run forever,
@@ -1155,7 +1210,22 @@
         durMs: phase.open ? 4000 : this.phaseDur, kind: phase.kind, phaseIdx: this.idx,
       });
       this.level = target;
+      if (phase.open) clearTimeout(this.phaseTimer);
+      else this.armPhaseTimer(this.phaseDur - lag);
       this.tickLoop();
+    },
+
+    // Authoritative phase advance: a timer, not rAF — rAF stops entirely
+    // when the screen is off, timers merely coarsen, so the breathing (and
+    // its cues) keeps going in a pocket or under a locked screen.
+    armPhaseTimer(delay) {
+      clearTimeout(this.phaseTimer);
+      this.phaseTimer = setTimeout(() => {
+        if (!this.running || this.paused) return;
+        this._lag = performance.now() - this.phaseStart - this.phaseDur;
+        this.idx++;
+        this.runPhase();
+      }, Math.max(50, delay));
     },
 
     phaseIndicator(phase) {
@@ -1177,8 +1247,8 @@
           const s = Math.floor(elapsed / 1000);
           $("phase-count").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
         } else {
-          $("phase-count").textContent = Math.ceil(Math.max(0, this.phaseDur - elapsed) / 1000);
-          if (elapsed >= this.phaseDur) { this.idx++; this.runPhase(); return; }
+          // countdown paint only — advancing is the phase timer's job
+          $("phase-count").textContent = Math.max(1, Math.ceil(Math.max(0, this.phaseDur - elapsed) / 1000));
         }
         this.raf = requestAnimationFrame(tick);
       };
@@ -1199,7 +1269,9 @@
       this.paused = true;
       this.pausedAt = performance.now();
       this.anims.forEach((a) => a.pause());
+      clearTimeout(this.phaseTimer);
       cancelAnimationFrame(this.raf);
+      media.state("paused");
       document.body.classList.add("paused");
       $("pause-btn").textContent = t("resume");
       $("phase-label").textContent = t("pausedWord");
@@ -1211,6 +1283,8 @@
       if (!this.running || !this.paused) return;
       this.paused = false;
       this.phaseStart += performance.now() - this.pausedAt;
+      if (!this.flat[this.idx].open) this.armPhaseTimer(this.phaseDur - (performance.now() - this.phaseStart));
+      media.state("playing");
       this.anims.forEach((a) => a.play());
       document.body.classList.remove("paused");
       $("pause-btn").textContent = t("pause");
@@ -1268,10 +1342,13 @@
       this.grounding = false;
       $("session-ground").hidden = true;
       clearTimeout(this.preTimer);
+      clearTimeout(this.phaseTimer);
       cancelAnimationFrame(this.raf);
       this.anims.forEach((a) => a.cancel());
       this.anims = [];
       wakeLock.release();
+      audio.letGo();
+      media.clear();
       $("hold-release").hidden = true;
       document.body.classList.remove("paused");
       document.body.classList.remove("chrome-idle");
@@ -1283,7 +1360,10 @@
 
     finish() {
       this.running = false;
+      clearTimeout(this.phaseTimer);
       cancelAnimationFrame(this.raf);
+      audio.letGo();
+      media.clear();
       this.anims.forEach((a) => a.cancel());
       this.anims = [];
       wakeLock.release();
