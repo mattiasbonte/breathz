@@ -18,6 +18,7 @@
   const LS_VISION = "breathz.visionImage";
   const LS_VBACK = "breathz.visionBackdrop";
   const LS_VFOCUS = "breathz.visionFocus"; // "x,y" percentages of the focal point
+  const LS_VZOOM = "breathz.visionZoom"; // 1 = cover fit, up to 2.5
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const I18N = window.BreathI18n;
@@ -531,6 +532,32 @@
     return `${isFinite(x) ? x : 50}% ${isFinite(y) ? y : 50}%`;
   }
 
+  function visionZoom() {
+    const z = parseFloat(localStorage.getItem(LS_VZOOM) || "1");
+    return isFinite(z) ? Math.min(2.5, Math.max(1, z)) : 1;
+  }
+
+  let visionAspect = null; // naturalWidth / naturalHeight of the stored image
+  function withVisionAspect(cb) {
+    if (visionAspect) { cb(visionAspect); return; }
+    const img = localStorage.getItem(LS_VISION);
+    if (!img) return;
+    const probe = new Image();
+    probe.onload = () => { visionAspect = probe.width / probe.height; cb(visionAspect); };
+    probe.src = img;
+  }
+
+  // Fraction of the image visible in a cover-fit container at a given zoom.
+  function visionGeom(contAspect, imgAspect, z) {
+    if (imgAspect >= contAspect) return { fw: contAspect / imgAspect / z, fh: 1 / z };
+    return { fw: 1 / z, fh: imgAspect / contAspect / z };
+  }
+
+  // background-size expressing "cover, then zoom in by z"
+  function visionBgSize(contAspect, imgAspect, z) {
+    return imgAspect >= contAspect ? `auto ${(z * 100).toFixed(1)}%` : `${(z * 100).toFixed(1)}% auto`;
+  }
+
   function refreshVisionBackdrop() {
     const img = localStorage.getItem(LS_VISION);
     const on = visionBackdropOn();
@@ -541,13 +568,17 @@
         $(id).style.backgroundImage = `url(${img})`;
         $(id).style.backgroundPosition = pos;
       }
+      withVisionAspect((ia) => {
+        const size = visionBgSize(window.innerWidth / window.innerHeight, ia, visionZoom());
+        for (const id of ["vb-soft", "vb-clear"]) $(id).style.backgroundSize = size;
+      });
     }
     $("vision-toggle").hidden = !img;
     $("vision-toggle").setAttribute("aria-pressed", on ? "true" : "false");
     $("vision-toggle").title = t("visionToggle");
   }
 
-  const vbClarity = (lv) => 0.05 + lv * 0.24; // inhale draws the vision into focus
+  const vbClarity = (lv) => 0.14 + lv * 0.34; // inhale draws the vision into focus
 
   function animatePhase(ctx) {
     const stage = $("stage");
@@ -1536,11 +1567,20 @@
       }));
 
     // intention: phrase persists; an image becomes the Vision style
-    function placeVisionDot() {
-      const [x, y] = (localStorage.getItem(LS_VFOCUS) || "50,50").split(",").map(Number);
-      const dot = $("vision-pos-dot");
-      dot.style.left = `${isFinite(x) ? x : 50}%`;
-      dot.style.top = `${isFinite(y) ? y : 50}%`;
+    // Paint the crop window: the exact part of the image the session shows
+    // on this screen at the current zoom and focus.
+    function paintVisionWin() {
+      withVisionAspect((ia) => {
+        const win = $("vision-pos-win");
+        const { fw, fh } = visionGeom(window.innerWidth / window.innerHeight, ia, visionZoom());
+        const [px, py] = (localStorage.getItem(LS_VFOCUS) || "50,50").split(",").map(Number);
+        const cx = fw / 2 + ((isFinite(px) ? px : 50) / 100) * (1 - fw);
+        const cy = fh / 2 + ((isFinite(py) ? py : 50) / 100) * (1 - fh);
+        win.style.width = `${(fw * 100).toFixed(2)}%`;
+        win.style.height = `${(fh * 100).toFixed(2)}%`;
+        win.style.left = `${((cx - fw / 2) * 100).toFixed(2)}%`;
+        win.style.top = `${((cy - fh / 2) * 100).toFixed(2)}%`;
+      });
     }
 
     function refreshVisionPos() {
@@ -1549,16 +1589,21 @@
       if (!img) return;
       const frame = $("vision-pos-frame");
       frame.style.backgroundImage = `url(${img})`;
-      const probe = new Image();
-      probe.onload = () => {
+      withVisionAspect((ia) => {
         // frame takes the image's own shape (capped in height) so the whole
         // picture is visible and both axes are always meaningful
-        frame.style.aspectRatio = `${probe.width} / ${probe.height}`;
-        frame.style.maxWidth = `${Math.round((260 * probe.width) / probe.height)}px`;
-      };
-      probe.src = img;
-      placeVisionDot();
+        frame.style.aspectRatio = `${ia}`;
+        frame.style.maxWidth = `${Math.round(260 * ia)}px`;
+        paintVisionWin();
+      });
+      $("vision-zoom").value = visionZoom();
       $("vision-pos-hint").textContent = t("visionPosHint");
+    }
+
+    function applyVisionChange() {
+      refreshVisionBackdrop();
+      builtStyleId = null; // vision style rebuilds with the new framing
+      styleDemo.start($("demo-stage"), demoPace(state.current));
     }
 
     $("intention-toggle").addEventListener("click", () => {
@@ -1572,32 +1617,66 @@
       }
     });
 
-    // tap or drag (mouse or touch alike) to mark the focal point of the image
+    // pan the crop window with one finger or the mouse; pinch, scroll or the
+    // slider to zoom — the window always shows exactly what the session will
     (() => {
       const frame = $("vision-pos-frame");
-      let picking = false;
-      const pick = (e) => {
+      const ptrs = new Map();
+      let pinch = null;
+      let wheelT = null;
+      const setFocusFromCenter = (cx, cy) => {
+        withVisionAspect((ia) => {
+          const { fw, fh } = visionGeom(window.innerWidth / window.innerHeight, ia, visionZoom());
+          const px = fw >= 1 ? 50 : Math.min(100, Math.max(0, ((cx - fw / 2) / (1 - fw)) * 100));
+          const py = fh >= 1 ? 50 : Math.min(100, Math.max(0, ((cy - fh / 2) / (1 - fh)) * 100));
+          localStorage.setItem(LS_VFOCUS, `${px.toFixed(1)},${py.toFixed(1)}`);
+          paintVisionWin();
+        });
+      };
+      const centerAt = (e) => {
         const r = frame.getBoundingClientRect();
-        const fx = Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100));
-        const fy = Math.min(100, Math.max(0, ((e.clientY - r.top) / r.height) * 100));
-        localStorage.setItem(LS_VFOCUS, `${fx.toFixed(1)},${fy.toFixed(1)}`);
-        placeVisionDot();
+        setFocusFromCenter((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+      };
+      const setZoom = (z) => {
+        z = Math.min(2.5, Math.max(1, z));
+        localStorage.setItem(LS_VZOOM, z.toFixed(2));
+        $("vision-zoom").value = z;
+        paintVisionWin();
       };
       frame.addEventListener("pointerdown", (e) => {
-        picking = true;
+        ptrs.set(e.pointerId, e);
         frame.setPointerCapture(e.pointerId);
-        pick(e);
+        if (ptrs.size === 2) {
+          const [p1, p2] = [...ptrs.values()];
+          pinch = { d: Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY), z: visionZoom() };
+        } else centerAt(e);
       });
-      frame.addEventListener("pointermove", (e) => { if (picking) pick(e); });
-      const done = () => {
-        if (!picking) return;
-        picking = false;
-        refreshVisionBackdrop();
-        builtStyleId = null; // vision style rebuilds with the new framing
-        styleDemo.start($("demo-stage"), demoPace(state.current));
+      frame.addEventListener("pointermove", (e) => {
+        if (!ptrs.has(e.pointerId)) return;
+        ptrs.set(e.pointerId, e);
+        if (ptrs.size === 2 && pinch) {
+          const [p1, p2] = [...ptrs.values()];
+          setZoom(pinch.z * (Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY) / pinch.d));
+        } else if (ptrs.size === 1) centerAt(e);
+      });
+      const done = (e) => {
+        if (!ptrs.delete(e.pointerId)) return;
+        if (ptrs.size < 2) pinch = null;
+        if (ptrs.size === 0) applyVisionChange();
       };
       frame.addEventListener("pointerup", done);
       frame.addEventListener("pointercancel", done);
+      frame.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        setZoom(visionZoom() * (1 - e.deltaY * 0.0015));
+        clearTimeout(wheelT);
+        wheelT = setTimeout(applyVisionChange, 300);
+      }, { passive: false });
+      $("vision-zoom").addEventListener("input", () => {
+        localStorage.setItem(LS_VZOOM, parseFloat($("vision-zoom").value).toFixed(2));
+        paintVisionWin();
+      });
+      $("vision-zoom").addEventListener("change", applyVisionChange);
     })();
     $("intention-text").addEventListener("input", () => {
       const v = $("intention-text").value.trim().slice(0, 120);
@@ -1630,6 +1709,8 @@
         $("intention-clear").hidden = false;
         localStorage.setItem(LS_VBACK, "1"); // a fresh vision starts visible
         localStorage.setItem(LS_VFOCUS, "50,50");
+        localStorage.setItem(LS_VZOOM, "1");
+        visionAspect = canvas.width / canvas.height;
         refreshVisionBackdrop();
         refreshVisionPos();
         renderStylePicker();
@@ -1642,6 +1723,10 @@
     });
     $("intention-clear").addEventListener("click", () => {
       localStorage.removeItem(LS_VISION);
+      localStorage.removeItem(LS_VFOCUS);
+      localStorage.removeItem(LS_VZOOM);
+      visionAspect = null;
+      $("vision-pos").hidden = true;
       refreshVisionBackdrop();
       $("intention-clear").hidden = true;
       if (currentStyleId === "vision") {

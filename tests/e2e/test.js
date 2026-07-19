@@ -591,17 +591,24 @@ function check(name, cond) {
   check("framing control shown when image set", await page.locator("#vision-pos").isVisible());
   await page.locator("#vision-pos-frame").scrollIntoViewIfNeeded();
   await page.waitForTimeout(300); // frame adopts the image's aspect ratio
+  await page.evaluate(() => {
+    const z = document.getElementById("vision-zoom");
+    z.value = "1.8";
+    z.dispatchEvent(new Event("input", { bubbles: true }));
+    z.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.waitForTimeout(300); // backdrop size settles after the aspect probe
+  check("zoom persists", (await page.evaluate(() => localStorage.getItem("breathz.visionZoom"))) === "1.80");
+  check("backdrop zooms in", await page.evaluate(() =>
+    document.getElementById("vb-clear").style.backgroundSize.includes("180")));
+  const winW = await page.evaluate(() => parseFloat(document.getElementById("vision-pos-win").style.width));
+  check(`crop window shrinks when zoomed (${winW.toFixed(0)}%)`, winW > 10 && winW < 100);
   const frameBox = await page.locator("#vision-pos-frame").boundingBox();
-  await page.mouse.click(frameBox.x + frameBox.width * 0.78, frameBox.y + frameBox.height * 0.3);
+  await page.mouse.click(frameBox.x + frameBox.width * 0.8, frameBox.y + frameBox.height * 0.25);
+  await page.waitForTimeout(150);
   const focus = await page.evaluate(() => localStorage.getItem("breathz.visionFocus"));
   const [ffx, ffy] = (focus || "50,50").split(",").map(Number);
-  check(`tap sets the focal point on both axes (${focus})`, Math.abs(ffx - 78) < 4 && Math.abs(ffy - 30) < 4);
-  const dotPos = await page.evaluate(() => {
-    const d = document.getElementById("vision-pos-dot");
-    return [parseFloat(d.style.left), parseFloat(d.style.top)];
-  });
-  check(`marker follows the tap (${dotPos.map((n) => n.toFixed(0)).join(",")})`,
-    Math.abs(dotPos[0] - ffx) < 1 && Math.abs(dotPos[1] - ffy) < 1);
+  check(`pan moves the crop window on both axes (${focus})`, ffx > 55 && ffy < 45);
   check("backdrop layer follows the framing", await page.evaluate(() => {
     const want = localStorage.getItem("breathz.visionFocus").split(",").map(Number);
     const got = document.getElementById("vb-clear").style.backgroundPosition.split(" ").map(parseFloat);
@@ -610,7 +617,7 @@ function check(name, cond) {
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await page.waitForSelector("#screen-home.active");
-  await page.evaluate(() => { localStorage.removeItem("breathz.visionImage"); localStorage.removeItem("breathz.visionBackdrop"); localStorage.removeItem("breathz.visionFocus"); });
+  await page.evaluate(() => { localStorage.removeItem("breathz.visionImage"); localStorage.removeItem("breathz.visionBackdrop"); localStorage.removeItem("breathz.visionFocus"); localStorage.removeItem("breathz.visionZoom"); });
 
   // --- pwa bits
   const swCount = await page.evaluate(async () =>

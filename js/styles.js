@@ -628,6 +628,14 @@
         disc.style.backgroundImage = `url(${img})`;
         const [fx, fy] = (localStorage.getItem("breathz.visionFocus") || "50,50").split(",");
         disc.style.backgroundPosition = `${fx}% ${fy}%`;
+        const z = Math.min(2.5, Math.max(1, parseFloat(localStorage.getItem("breathz.visionZoom") || "1") || 1));
+        const probe = new Image();
+        probe.onload = () => {
+          // the disc is round (square box): zoom past cover along the long axis
+          disc.style.backgroundSize = probe.width >= probe.height
+            ? `auto ${(z * 100).toFixed(1)}%` : `${(z * 100).toFixed(1)}% auto`;
+        };
+        probe.src = img;
       } else disc.classList.add("vision-empty");
     },
     set(stage, lv) {
