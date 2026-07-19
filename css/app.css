@@ -1369,8 +1369,8 @@ body.paused .mandala-layer { animation-play-state: paused; }
   background-position: center;
   border: 1px solid rgba(200, 214, 255, 0.35);
   box-shadow: 0 0 60px rgba(129, 140, 248, 0.3);
-  /* a remembered image, not a photograph */
-  filter: blur(2px) saturate(0.72) brightness(0.88);
+  /* kept sharp — the veil below does the dreaming */
+  filter: saturate(0.85) brightness(0.94);
   overflow: hidden;
 }
 .vision-disc::after {
@@ -1378,9 +1378,10 @@ body.paused .mandala-layer { animation-play-state: paused; }
   position: absolute;
   inset: 0;
   border-radius: 50%;
+  /* a subtle wash in the app's night palette + edges melting into the sky */
   background:
-    radial-gradient(circle at 50% 42%, transparent 34%, rgba(10, 14, 31, 0.45) 100%),
-    linear-gradient(160deg, rgba(129, 140, 248, 0.16), rgba(125, 211, 252, 0.08) 55%, rgba(196, 181, 253, 0.15));
+    radial-gradient(circle at 50% 42%, transparent 44%, rgba(10, 14, 31, 0.4) 100%),
+    linear-gradient(160deg, rgba(129, 140, 248, 0.14), rgba(10, 14, 31, 0.1) 55%, rgba(196, 181, 253, 0.12));
 }
 .vision-disc.vision-empty {
   background:
