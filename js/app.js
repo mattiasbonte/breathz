@@ -16,6 +16,8 @@
   const LS_FAVS = "breathz.favorites";
   const LS_INTENTION = "breathz.intention";
   const LS_VISION = "breathz.visionImage";
+  const LS_VBACK = "breathz.visionBackdrop";
+  const LS_VFOCUS = "breathz.visionFocus"; // "x,y" percentages of the focal point
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const I18N = window.BreathI18n;
@@ -519,14 +521,53 @@
     style.set(stage, level, phaseIdx);
   }
 
+  // Is the intention image drawn as atmosphere behind the animation?
+  function visionBackdropOn() {
+    return !!localStorage.getItem(LS_VISION) && localStorage.getItem(LS_VBACK) !== "0";
+  }
+
+  function visionFocus() {
+    const [x, y] = (localStorage.getItem(LS_VFOCUS) || "50,50").split(",").map(Number);
+    return `${isFinite(x) ? x : 50}% ${isFinite(y) ? y : 50}%`;
+  }
+
+  function refreshVisionBackdrop() {
+    const img = localStorage.getItem(LS_VISION);
+    const on = visionBackdropOn();
+    $("vision-backdrop").hidden = !on;
+    if (on) {
+      const pos = visionFocus();
+      for (const id of ["vb-soft", "vb-clear"]) {
+        $(id).style.backgroundImage = `url(${img})`;
+        $(id).style.backgroundPosition = pos;
+      }
+    }
+    $("vision-toggle").hidden = !img;
+    $("vision-toggle").setAttribute("aria-pressed", on ? "true" : "false");
+    $("vision-toggle").title = t("visionToggle");
+  }
+
+  const vbClarity = (lv) => 0.05 + lv * 0.24; // inhale draws the vision into focus
+
   function animatePhase(ctx) {
     const stage = $("stage");
+    const anims = [];
     if (reducedMotion.matches) {
       // Gentle opacity pulse instead of movement, whatever the style.
       const o = ctx.kind === "inhale" ? [0.55, 1] : ctx.kind === "exhale" ? [1, 0.55] : [1, 1];
-      return [stage.animate({ opacity: o }, { duration: ctx.durMs, easing: EASE, fill: "forwards" })];
+      anims.push(stage.animate({ opacity: o }, { duration: ctx.durMs, easing: EASE, fill: "forwards" }));
+    } else {
+      anims.push(...activeStyle().animate(stage, ctx));
     }
-    return activeStyle().animate(stage, ctx);
+    if (visionBackdropOn() && !$("vision-backdrop").hidden && !reducedMotion.matches) {
+      const clear = $("vb-clear");
+      clear.style.opacity = vbClarity(ctx.from); // baseline the cancel falls back to
+      anims.push(clear.animate(
+        { opacity: [vbClarity(ctx.from), vbClarity(ctx.to)] },
+        { duration: ctx.durMs, easing: EASE, fill: "forwards" }
+      ));
+    }
+    return anims;
   }
 
   // ---------------------------------------------------------- language
@@ -994,6 +1035,7 @@
       const intention = seq.intention ?? localStorage.getItem(LS_INTENTION);
       $("intention-line").textContent = intention || "";
       $("intention-line").hidden = !intention;
+      refreshVisionBackdrop();
       show("session");
       ensureStage(0, 0); // after show(): styles measure the visible stage
       $("pause-btn").textContent = t("pause");
@@ -1494,15 +1536,55 @@
       }));
 
     // intention: phrase persists; an image becomes the Vision style
+    function refreshVisionPos() {
+      const img = localStorage.getItem(LS_VISION);
+      $("vision-pos").hidden = !img;
+      if (img) {
+        const frame = $("vision-pos-frame");
+        frame.style.backgroundImage = `url(${img})`;
+        frame.style.backgroundPosition = visionFocus();
+        $("vision-pos-hint").textContent = t("visionPosHint");
+      }
+    }
+
     $("intention-toggle").addEventListener("click", () => {
       const panel = $("intention-panel");
       panel.hidden = !panel.hidden;
       if (!panel.hidden) {
         $("intention-text").value = localStorage.getItem(LS_INTENTION) || "";
         $("intention-clear").hidden = !localStorage.getItem(LS_VISION);
+        refreshVisionPos();
         $("intention-text").focus({ preventScroll: true });
       }
     });
+
+    // drag (mouse or touch alike) to choose which part of the image shows
+    (() => {
+      const frame = $("vision-pos-frame");
+      let drag = null;
+      frame.addEventListener("pointerdown", (e) => {
+        const [x, y] = (localStorage.getItem(LS_VFOCUS) || "50,50").split(",").map(Number);
+        drag = { x: e.clientX, y: e.clientY, fx: isFinite(x) ? x : 50, fy: isFinite(y) ? y : 50 };
+        frame.setPointerCapture(e.pointerId);
+      });
+      frame.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        const r = frame.getBoundingClientRect();
+        const fx = Math.min(100, Math.max(0, drag.fx - ((e.clientX - drag.x) / r.width) * 120));
+        const fy = Math.min(100, Math.max(0, drag.fy - ((e.clientY - drag.y) / r.height) * 120));
+        localStorage.setItem(LS_VFOCUS, `${fx.toFixed(1)},${fy.toFixed(1)}`);
+        frame.style.backgroundPosition = visionFocus();
+      });
+      const done = () => {
+        if (!drag) return;
+        drag = null;
+        refreshVisionBackdrop();
+        builtStyleId = null; // vision style rebuilds with the new framing
+        styleDemo.start($("demo-stage"), demoPace(state.current));
+      };
+      frame.addEventListener("pointerup", done);
+      frame.addEventListener("pointercancel", done);
+    })();
     $("intention-text").addEventListener("input", () => {
       const v = $("intention-text").value.trim().slice(0, 120);
       if (v) localStorage.setItem(LS_INTENTION, v);
@@ -1532,6 +1614,10 @@
         if (state.current) state.current.style = "vision";
         builtStyleId = null; // force the session stage to rebuild with the new image
         $("intention-clear").hidden = false;
+        localStorage.setItem(LS_VBACK, "1"); // a fresh vision starts visible
+        localStorage.setItem(LS_VFOCUS, "50,50");
+        refreshVisionBackdrop();
+        refreshVisionPos();
         renderStylePicker();
         styleDemo.start($("demo-stage"), demoPace(state.current));
         toast(t("visionSet"));
@@ -1542,6 +1628,7 @@
     });
     $("intention-clear").addEventListener("click", () => {
       localStorage.removeItem(LS_VISION);
+      refreshVisionBackdrop();
       $("intention-clear").hidden = true;
       if (currentStyleId === "vision") {
         renderStylePicker();
@@ -1607,6 +1694,12 @@
         }
       }, { passive: true });
     })();
+
+    // the vision backdrop can be toggled mid-breath without breaking rhythm
+    $("vision-toggle").addEventListener("click", () => {
+      localStorage.setItem(LS_VBACK, visionBackdropOn() ? "0" : "1");
+      refreshVisionBackdrop();
+    });
 
     // fullscreen immersion (where the API exists — iOS Safari relies on PWA)
     const fsBtn = $("fullscreen-btn");
@@ -1721,6 +1814,7 @@
           else if (e.code === "ArrowRight") { e.preventDefault(); session.switchStyle(1); }
           else if (e.code === "ArrowLeft") { e.preventDefault(); session.switchStyle(-1); }
           else if (e.key === "m" || e.key === "M") toggleSound();
+          else if (e.key === "v" || e.key === "V") $("vision-toggle").click();
         } else { // "well done" overlay
           if (e.code === "Space" || e.code === "Enter" || e.code === "ArrowRight") {
             e.preventDefault(); session.start(state.current);

@@ -716,6 +716,25 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 
 .intention-file-btn { cursor: pointer; display: inline-block; }
 
+.vision-pos { margin-top: 16px; }
+.vision-pos-frame {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background-size: cover;
+  background-position: 50% 50%;
+  cursor: grab;
+  touch-action: none; /* the drag owns the gesture on touch screens */
+}
+.vision-pos-frame:active { cursor: grabbing; }
+.vision-pos-hint {
+  margin-top: 8px;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  font-weight: 300;
+}
+
 .intention-help {
   margin-top: 14px;
   color: var(--ink-faint);
@@ -768,6 +787,37 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 }
 .screen-session.active { display: flex; }
 .screen-session { touch-action: pan-y; } /* keep horizontal swipes for style switching */
+
+/* ---- vision backdrop: the intention image as atmosphere behind any
+   style — heavily blurred and dim (never a photo demanding attention);
+   the clearer layer breathes into focus with the inhale */
+.vision-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.vb-layer {
+  position: absolute;
+  inset: -5%;
+  background-size: cover;
+  background-position: center;
+  will-change: opacity;
+}
+.vb-soft {
+  filter: blur(46px) saturate(0.65) brightness(0.75);
+  opacity: 0.3;
+}
+.vb-clear {
+  filter: blur(14px) saturate(0.8) brightness(0.85);
+  opacity: 0.05;
+}
+.vision-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 14, 31, 0.42); /* contrast floor under the guide */
+}
 
 /* ---- depth stack: fractal nebula + two star layers with parallax ----
    Mid-range fractal texture and layered depth support "soft fascination":

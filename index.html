@@ -155,6 +155,10 @@
             <input type="file" id="intention-image" accept="image/*" hidden>
             <button class="pill-btn" id="intention-clear" hidden data-i18n="removeImage">remove image</button>
           </div>
+          <div class="vision-pos" id="vision-pos" hidden>
+            <div class="vision-pos-frame" id="vision-pos-frame"></div>
+            <p class="vision-pos-hint" id="vision-pos-hint"></p>
+          </div>
           <p class="intention-help">
             The phrase glows softly during your session and travels with shared links.
             Your image becomes the <em>Vision</em> animation — a scene to breathe toward. It never leaves this device.
@@ -180,6 +184,10 @@
 
   <!-- ============ SESSION ============ -->
   <section class="screen screen-session" id="screen-session">
+    <div class="vision-backdrop" id="vision-backdrop" hidden aria-hidden="true">
+      <div class="vb-layer vb-soft" id="vb-soft"></div>
+      <div class="vb-layer vb-clear" id="vb-clear"></div>
+    </div>
     <div class="depth-field" id="depth-field" aria-hidden="true">
       <div class="depth-par depth-par-nebula"><svg class="depth-nebula" width="100%" height="100%">
         <filter id="neb-noise"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="7"/><feColorMatrix type="matrix" values="0 0 0 0 0.32  0 0 0 0 0.36  0 0 0 0 0.62  0 0 0 0.6 0"/></filter>
@@ -208,6 +216,9 @@
       <div class="session-controls">
         <button class="ghost-btn" id="pause-btn" data-i18n="pause">Pause</button>
         <button class="ghost-btn" id="end-btn" data-i18n="end">End</button>
+        <button class="ghost-btn icon-btn" id="vision-toggle" aria-pressed="false" hidden>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 15l-4.5-4.5L7 20"/></svg>
+        </button>
         <button class="ghost-btn icon-btn" id="fullscreen-btn" title="Fullscreen" hidden>
           <svg class="icon icon-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
           <svg class="icon icon-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M16 3v3a2 2 0 0 0 2 2h3"/><path d="M8 21v-3a2 2 0 0 0-2-2H3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>

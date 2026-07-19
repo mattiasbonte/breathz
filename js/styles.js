@@ -624,8 +624,11 @@
       el(stage, "vision-halo");
       const disc = el(stage, "vision-disc");
       const img = localStorage.getItem("breathz.visionImage");
-      if (img) disc.style.backgroundImage = `url(${img})`;
-      else disc.classList.add("vision-empty");
+      if (img) {
+        disc.style.backgroundImage = `url(${img})`;
+        const [fx, fy] = (localStorage.getItem("breathz.visionFocus") || "50,50").split(",");
+        disc.style.backgroundPosition = `${fx}% ${fy}%`;
+      } else disc.classList.add("vision-empty");
     },
     set(stage, lv) {
       const s = `scale(${this._s(lv)})`;

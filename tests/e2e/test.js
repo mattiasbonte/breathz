@@ -556,6 +556,58 @@ function check(name, cond) {
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.waitForSelector("#preset-grid .seq-card");
 
+  // --- vision backdrop: image as atmosphere behind any style, breath-coupled
+  await page.evaluate(() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    const g = c.getContext("2d");
+    const grad = g.createLinearGradient(0, 0, 64, 64);
+    grad.addColorStop(0, "#f59e0b"); grad.addColorStop(1, "#7c3aed");
+    g.fillStyle = grad; g.fillRect(0, 0, 64, 64);
+    localStorage.setItem("breathz.visionImage", c.toDataURL("image/jpeg", 0.8));
+  });
+  await page.locator('#preset-grid .seq-card:has-text("Coherent Breathing")').click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#screen-session.active");
+  check("backdrop visible behind non-vision style",
+    await page.locator("#vision-backdrop").isVisible());
+  check("backdrop layers carry the image",
+    await page.evaluate(() => document.getElementById("vb-clear").style.backgroundImage.startsWith("url")));
+  await page.waitForTimeout(1600);
+  const clarity1 = await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById("vb-clear")).opacity));
+  check(`vision clarity breath-coupled (${clarity1.toFixed(2)})`, clarity1 > 0.06);
+  await page.keyboard.press("v");
+  check("V key hides the backdrop", await page.locator("#vision-backdrop").isHidden());
+  check("preference persisted off",
+    (await page.evaluate(() => localStorage.getItem("breathz.visionBackdrop"))) === "0");
+  await page.locator("#vision-toggle").click();
+  check("toggle button restores it", await page.locator("#vision-backdrop").isVisible());
+  await page.locator("#end-btn").click();
+  await page.waitForSelector("#screen-preview.active");
+
+  // --- vision framing: drag the preview to pick the visible part of the image
+  await page.locator("#intention-toggle").click();
+  await page.waitForSelector("#intention-panel:not([hidden])");
+  check("framing control shown when image set", await page.locator("#vision-pos").isVisible());
+  await page.locator("#vision-pos-frame").scrollIntoViewIfNeeded();
+  const frameBox = await page.locator("#vision-pos-frame").boundingBox();
+  await page.mouse.move(frameBox.x + frameBox.width / 2, frameBox.y + frameBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(frameBox.x + frameBox.width / 2 - 80, frameBox.y + frameBox.height / 2 + 30, { steps: 6 });
+  await page.mouse.up();
+  const focus = await page.evaluate(() => localStorage.getItem("breathz.visionFocus"));
+  const [ffx, ffy] = (focus || "50,50").split(",").map(Number);
+  check(`drag moves the focal point (${focus})`, ffx > 55 && ffy < 45);
+  check("backdrop layer follows the framing", await page.evaluate(() => {
+    const want = localStorage.getItem("breathz.visionFocus").split(",").map(Number);
+    const got = document.getElementById("vb-clear").style.backgroundPosition.split(" ").map(parseFloat);
+    return Math.abs(got[0] - want[0]) < 0.5 && Math.abs(got[1] - want[1]) < 0.5;
+  }));
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+  await page.evaluate(() => { localStorage.removeItem("breathz.visionImage"); localStorage.removeItem("breathz.visionBackdrop"); localStorage.removeItem("breathz.visionFocus"); });
+
   // --- pwa bits
   const swCount = await page.evaluate(async () =>
     (await navigator.serviceWorker.getRegistrations()).length);
