@@ -745,6 +745,105 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 .screen-session.active { display: flex; }
 .screen-session { touch-action: pan-y; } /* keep horizontal swipes for style switching */
 
+/* ---- depth stack: fractal nebula + two star layers with parallax ----
+   Mid-range fractal texture and layered depth support "soft fascination":
+   gently absorbing, never demanding. All motion far below alerting speeds. */
+
+.depth-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.depth-par {
+  position: absolute;
+  inset: -4%;
+  transition: transform 1.6s var(--ease-breath); /* trailing parallax */
+  will-change: transform;
+}
+
+.depth-nebula {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  mix-blend-mode: screen;
+}
+
+.depth-drift {
+  position: absolute;
+  inset: 0;
+  animation: depth-drift-a 140s var(--ease-breath) infinite alternate;
+}
+.depth-drift-b { animation: depth-drift-b 190s var(--ease-breath) infinite alternate; }
+@keyframes depth-drift-a { to { transform: translate(1.6%, -1.1%); } }
+@keyframes depth-drift-b { to { transform: translate(-1.2%, 1.4%); } }
+
+.depth-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #cdd8f6;
+  animation: depth-twinkle 6s ease-in-out infinite alternate;
+}
+@keyframes depth-twinkle {
+  from { opacity: 0.12; }
+  to   { opacity: 0.55; }
+}
+
+/* 1/f aliveness: two auras at incommensurate periods — the composite
+   glow never exactly repeats, which reads as organic rather than looped */
+.stage-aura {
+  position: absolute;
+  inset: -10%;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(30px);
+  will-change: transform, opacity;
+}
+.aura-1 {
+  background: radial-gradient(circle, rgba(125, 168, 220, 0.14), transparent 65%);
+  animation: aura-one 13s var(--ease-breath) infinite alternate;
+}
+.aura-2 {
+  background: radial-gradient(circle, rgba(150, 140, 210, 0.11), transparent 60%);
+  animation: aura-two 17s var(--ease-breath) infinite alternate;
+}
+@keyframes aura-one { from { transform: scale(0.97); opacity: 0.7; } to { transform: scale(1.03); opacity: 1; } }
+@keyframes aura-two { from { transform: scale(1.02); opacity: 0.85; } to { transform: scale(0.96); opacity: 0.65; } }
+
+body.paused .stage-aura,
+body.paused .depth-field * { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .depth-drift, .depth-drift-b, .depth-star, .stage-aura { animation: none; }
+}
+
+/* depth vignette: darkened edges pull the eye to the breathing guide */
+.screen-session::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 42%, transparent 52%, rgba(4, 6, 16, 0.55) 100%);
+}
+
+/* while breathing, the chrome melts away — any movement brings it back */
+.session-controls, .session-info {
+  transition: opacity 1.4s var(--ease-breath);
+}
+body.chrome-idle .session-controls,
+body.chrome-idle .session-info {
+  opacity: 0;
+  pointer-events: none;
+}
+/* numbers soften too once you're settled — guidance, not a clock */
+.phase-count { transition: opacity 1.4s var(--ease-breath); }
+body.chrome-idle .phase-count { opacity: 0.4; }
+
+#fullscreen-btn .icon-fs-exit { display: none; }
+#fullscreen-btn.fs-active .icon-fs-enter { display: none; }
+#fullscreen-btn.fs-active .icon-fs-exit { display: block; }
+
 .session-stage {
   display: flex;
   flex-direction: column;

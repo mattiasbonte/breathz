@@ -164,8 +164,18 @@
 
   <!-- ============ SESSION ============ -->
   <section class="screen screen-session" id="screen-session">
+    <div class="depth-field" id="depth-field" aria-hidden="true">
+      <div class="depth-par depth-par-nebula"><svg class="depth-nebula" width="100%" height="100%">
+        <filter id="neb-noise"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="7"/><feColorMatrix type="matrix" values="0 0 0 0 0.32  0 0 0 0 0.36  0 0 0 0 0.62  0 0 0 0.6 0"/></filter>
+        <rect width="100%" height="100%" filter="url(#neb-noise)"/>
+      </svg></div>
+      <div class="depth-par depth-par-far"><div class="depth-drift" id="depth-far"></div></div>
+      <div class="depth-par depth-par-near"><div class="depth-drift depth-drift-b" id="depth-near"></div></div>
+    </div>
     <div class="session-stage">
       <div class="orb-wrap" id="orb-wrap">
+        <div class="stage-aura aura-1"></div>
+        <div class="stage-aura aura-2"></div>
         <div class="stage" id="stage"></div>
         <div class="orb-core" id="orb-core">
           <div class="phase-label" id="phase-label">breathe</div>
@@ -182,6 +192,10 @@
       <div class="session-controls">
         <button class="ghost-btn" id="pause-btn">Pause</button>
         <button class="ghost-btn" id="end-btn">End</button>
+        <button class="ghost-btn icon-btn" id="fullscreen-btn" title="Fullscreen" hidden>
+          <svg class="icon icon-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+          <svg class="icon icon-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M16 3v3a2 2 0 0 0 2 2h3"/><path d="M8 21v-3a2 2 0 0 0-2-2H3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+        </button>
         <div class="vol-wrap vol-up">
           <button class="ghost-btn icon-btn session-sound" id="session-sound" aria-pressed="false" title="Sound cues">
             <svg class="icon icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg>

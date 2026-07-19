@@ -928,6 +928,7 @@
     // leaves the grounding card and starts the countdown + first phase
     beginBreathing() {
       this.grounding = false;
+      this.onActivity?.();
       $("session-ground").hidden = true;
       document.querySelector(".session-stage").style.display = "";
       if (!localStorage.getItem("breathz.swipeHintShown")) {
@@ -1034,6 +1035,7 @@
       document.body.classList.add("paused");
       $("pause-btn").textContent = "Resume";
       $("phase-label").textContent = "paused";
+      document.body.classList.remove("chrome-idle");
       wakeLock.release();
     },
 
@@ -1104,6 +1106,8 @@
       wakeLock.release();
       $("hold-release").hidden = true;
       document.body.classList.remove("paused");
+      document.body.classList.remove("chrome-idle");
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       // openPreview repopulates the whole screen — required when the session
       // was started straight from home and the preview was never rendered.
       if (goHome) openPreview(state.current);
@@ -1116,6 +1120,7 @@
       this.anims = [];
       wakeLock.release();
       $("hold-release").hidden = true;
+      document.body.classList.remove("chrome-idle");
       journalAdd({ t: Date.now(), seq: this.seq.name, detail: practiceMeta(this.seq) });
       const n = journal().length;
       $("done-summary").textContent =
@@ -1465,6 +1470,70 @@
       try { await navigator.clipboard.writeText(text); toast("Practice log copied"); }
       catch { prompt("Copy your log:", text); }
     });
+
+    // depth field: deterministic star layers + trailing pointer parallax
+    (() => {
+      const scatter = (holder, n, minSize, maxSize, seedMul) => {
+        for (let i = 0; i < n; i++) {
+          const angle = i * 137.5 * (Math.PI / 180);
+          const radius = 8 + ((i * seedMul) % 44);
+          const star = document.createElement("div");
+          star.className = "depth-star";
+          const size = minSize + ((i * 13) % (maxSize - minSize + 1));
+          Object.assign(star.style, {
+            left: `${50 + Math.cos(angle) * radius}%`,
+            top: `${50 + Math.sin(angle) * radius}%`,
+            width: `${size}px`, height: `${size}px`,
+            animationDuration: `${4200 + (i * 733) % 4800}ms`,
+            animationDelay: `${(i * 977) % 5000}ms`,
+          });
+          holder.appendChild(star);
+        }
+      };
+      scatter($("depth-far"), 20, 1, 2, 5077);   // distant: small, dim
+      scatter($("depth-near"), 11, 2, 3, 8231);  // closer: slightly larger
+
+      const layers = [
+        [document.querySelector(".depth-par-nebula"), 3],
+        [document.querySelector(".depth-par-far"), 7],
+        [document.querySelector(".depth-par-near"), 13],
+      ];
+      $("screen-session").addEventListener("pointermove", (e) => {
+        const nx = e.clientX / window.innerWidth - 0.5;
+        const ny = e.clientY / window.innerHeight - 0.5;
+        for (const [el2, mag] of layers) {
+          el2.style.transform = `translate(${(-nx * mag).toFixed(1)}px, ${(-ny * mag).toFixed(1)}px)`;
+        }
+      }, { passive: true });
+    })();
+
+    // fullscreen immersion (where the API exists — iOS Safari relies on PWA)
+    const fsBtn = $("fullscreen-btn");
+    if (document.documentElement.requestFullscreen) {
+      fsBtn.hidden = false;
+      fsBtn.addEventListener("click", () => {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen().catch(() => {});
+      });
+      document.addEventListener("fullscreenchange", () => {
+        fsBtn.classList.toggle("fs-active", !!document.fullscreenElement);
+      });
+    }
+
+    // chrome fades away while you breathe; any movement brings it back
+    let idleTimer = 0;
+    const chromeWake = () => {
+      document.body.classList.remove("chrome-idle");
+      clearTimeout(idleTimer);
+      if (session.running && !session.paused && !session.grounding && !session.preRolling) {
+        idleTimer = setTimeout(() => {
+          if (session.running && !session.paused) document.body.classList.add("chrome-idle");
+        }, 4000);
+      }
+    };
+    ["pointermove", "pointerdown", "keydown"].forEach((ev) =>
+      document.addEventListener(ev, chromeWake, { passive: true }));
+    session.onActivity = chromeWake; // engine pokes this on state changes
 
     // swipe left/right anywhere on the session screen to change the scenery
     let swipeStart = null;
