@@ -412,6 +412,35 @@ function check(name, cond) {
   await page.keyboard.press("Escape");
   await page.waitForSelector("#screen-home.active");
 
+  // --- duplicate hygiene
+  await page.evaluate(() => {
+    const local = JSON.parse(localStorage.getItem("breathz.sequences") || "[]");
+    const boxPhases = [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }, { kind: "hold", seconds: 4 }];
+    local.push({ id: "local_dup1", source: "local", name: "Box Breathing", cycles: 10, phases: boxPhases });
+    local.push({ id: "local_kept", source: "local", name: "My Box", cycles: 10, phases: boxPhases });
+    localStorage.setItem("breathz.sequences", JSON.stringify(local));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  check("identical preset copy cleaned on load",
+    (await page.locator('#preset-grid .seq-card:has-text("Box Breathing")').count()) === 1);
+  check("renamed copy kept",
+    (await page.locator('#preset-grid .seq-card:has-text("My Box")').count()) === 1);
+  await page.locator('#preset-grid .seq-card:has-text("Box Breathing")').first().click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#edit-btn").click();
+  await page.waitForSelector("#screen-builder.active");
+  await page.locator("#builder-save").click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+  check("saving unchanged preset creates no duplicate",
+    (await page.locator('#preset-grid .seq-card:has-text("Box Breathing")').count()) === 1);
+  await page.evaluate(() => {
+    const local = JSON.parse(localStorage.getItem("breathz.sequences") || "[]");
+    localStorage.setItem("breathz.sequences", JSON.stringify(local.filter((s) => s.name !== "My Box")));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+
   // --- pwa bits
   const swCount = await page.evaluate(async () =>
     (await navigator.serviceWorker.getRegistrations()).length);

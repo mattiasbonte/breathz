@@ -175,6 +175,14 @@
   function loadLocal() {
     state.local = readLS(LS_SEQS, []);
     state.favs = readLS(LS_FAVS, []);
+    // drop saved copies that are identical to a preset (earlier versions
+    // created them when a preset was edited and saved unchanged)
+    const presetPrints = new Set(PRESETS.map(M.practiceFingerprint));
+    const cleaned = state.local.filter((s) => !presetPrints.has(M.practiceFingerprint(s)));
+    if (cleaned.length !== state.local.length) {
+      state.local = cleaned;
+      saveLocal();
+    }
   }
   function saveLocal() { localStorage.setItem(LS_SEQS, JSON.stringify(state.local)); }
 
@@ -1109,6 +1117,19 @@
     $("builder-error").textContent = "";
 
     seq.style = validStyleId(seq.style) || currentStyleId;
+    const print = M.practiceFingerprint(seq);
+    const presetTwin = PRESETS.find((p) => M.practiceFingerprint(p) === print);
+    if (presetTwin) {
+      toast("That's identical to the preset — nothing new to save");
+      openPreview(presetTwin);
+      return;
+    }
+    const localTwin = state.local.find((s) => s.id !== seq.id && M.practiceFingerprint(s) === print);
+    if (localTwin) {
+      toast("You already have this one");
+      openPreview({ ...localTwin });
+      return;
+    }
     if (seq.source === "local" && seq.id) {
       const i = state.local.findIndex((s) => s.id === seq.id);
       if (i >= 0) state.local[i] = { ...seq };

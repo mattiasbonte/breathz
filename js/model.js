@@ -311,8 +311,19 @@
     });
   }
 
+  // Content identity (name + normalized parts) — used to spot duplicates.
+  function practiceFingerprint(seq) {
+    return JSON.stringify({
+      name: seq.name,
+      segments: segmentsOf(seq).map((s) => ({
+        t: s.title || "", c: s.cycles || 1,
+        p: s.phases.map((p) => [p.kind, p.seconds, !!p.open]),
+      })),
+    });
+  }
+
   window.BreathModel = {
-    KINDS, TEXT_KINDS, KIND_SHORT,
+    KINDS, TEXT_KINDS, KIND_SHORT, practiceFingerprint,
     fmtSecs, fmtCycles, fmtDuration,
     segmentsOf, isProgram, practiceDuration, practiceMeta, hasOpenHold,
     validatePractice, validateSegment,
