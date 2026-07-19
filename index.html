@@ -43,13 +43,13 @@
       <h1 class="home-seq-name" id="home-seq-name">Box Breathing</h1>
       <p class="home-seq-meta" id="home-seq-meta"></p>
       <div class="preview-actions home-actions">
-        <button class="primary-btn" id="home-begin">Begin</button>
-        <button class="ghost-btn" id="home-customize">Customize</button>
+        <button class="primary-btn" id="home-begin" data-i18n="begin">Begin</button>
+        <button class="ghost-btn" id="home-customize" data-i18n="customize">Customize</button>
       </div>
     </section>
 
     <section class="mood-picker" aria-label="How are you feeling?">
-      <h2 class="mood-title">how are you feeling?</h2>
+      <h2 class="mood-title" data-i18n="howAreYouFeeling">how are you feeling?</h2>
       <div class="mood-chip-row" id="mood-chip-row"></div>
       <p class="mood-note" id="mood-note"></p>
     </section>
@@ -57,15 +57,16 @@
     <section class="deck" aria-label="Breathing practices">
       <div class="deck-head">
         <h2 id="deck-title">Practices</h2>
-        <button class="pill-btn" id="new-sequence-btn">+ Create your own</button>
+        <button class="pill-btn" id="new-sequence-btn" data-i18n="createYourOwn">+ Create your own</button>
       </div>
       <div class="card-grid" id="preset-grid"></div>
     </section>
 
     <footer class="foot">
-      <p><button class="link-btn" id="practitioners-link">for practitioners</button> · free · open · yours</p>
+      <p><button class="link-btn" id="practitioners-link" data-i18n="forPractitioners">for practitioners</button> · <span data-i18n="freeOpenYours">free · open · yours</span></p>
+      <p class="foot-langs" id="foot-langs"></p>
       <p class="foot-log" id="foot-log" hidden>
-        <span id="log-count"></span> · <button class="link-btn" id="copy-log">copy your practice log</button>
+        <span id="log-count"></span> · <button class="link-btn" id="copy-log" data-i18n="copyLog">copy your practice log</button>
       </p>
     </footer>
   </main>
@@ -120,26 +121,26 @@
       <div class="preview-pattern" id="preview-pattern"></div>
       <div class="preview-meta">
         <label class="cycles-label">
-          <span>cycles</span>
+          <span data-i18n="cycles">cycles</span>
           <input type="number" id="preview-cycles" min="1" max="500" value="10">
         </label>
         <span class="preview-duration" id="preview-duration"></span>
       </div>
       <div class="style-picker">
-        <span class="style-picker-label">animation</span>
+        <span class="style-picker-label" data-i18n="animation">animation</span>
         <div class="style-row" id="style-row" role="radiogroup" aria-label="Animation style"></div>
         <div class="style-demo" aria-hidden="true"><div class="stage" id="demo-stage"></div></div>
         <p class="style-hint" id="style-hint"></p>
       </div>
 
       <div class="intention-box">
-        <button class="link-btn" id="intention-toggle">set an intention</button>
+        <button class="link-btn" id="intention-toggle" data-i18n="setIntention">set an intention</button>
         <div class="intention-panel" id="intention-panel" hidden>
-          <input type="text" id="intention-text" maxlength="120" placeholder="I breathe toward…">
+          <input type="text" id="intention-text" maxlength="120" data-i18n-ph="intentionPh" placeholder="I breathe toward…">
           <div class="intention-actions">
-            <label class="pill-btn intention-file-btn" for="intention-image">add an image</label>
+            <label class="pill-btn intention-file-btn" for="intention-image" data-i18n="addImage">add an image</label>
             <input type="file" id="intention-image" accept="image/*" hidden>
-            <button class="pill-btn" id="intention-clear" hidden>remove image</button>
+            <button class="pill-btn" id="intention-clear" hidden data-i18n="removeImage">remove image</button>
           </div>
           <p class="intention-help">
             The phrase glows softly during your session and travels with shared links.
@@ -147,17 +148,19 @@
           </p>
         </div>
       </div>
-      <div class="preview-actions">
-        <button class="primary-btn" id="start-btn">Begin</button>
+      <div class="preview-actions primary-row">
+        <button class="primary-btn" id="start-btn" data-i18n="begin">Begin</button>
+      </div>
+      <div class="preview-actions secondary-row">
         <button class="ghost-btn" id="share-btn" title="Copy shareable link">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
-          <span>Share</span>
+          <span data-i18n="share">Share</span>
         </button>
         <button class="ghost-btn icon-btn" id="fav-btn" hidden aria-pressed="false" title="Favorite">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path class="star-shape" d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.2 9.4l6.1-.8z"/></svg>
         </button>
-        <button class="ghost-btn" id="edit-btn" hidden>Edit</button>
-        <button class="ghost-btn danger" id="delete-btn" hidden>Delete</button>
+        <button class="ghost-btn" id="edit-btn" hidden data-i18n="edit">Edit</button>
+        <button class="ghost-btn danger" id="delete-btn" hidden data-i18n="del">Delete</button>
       </div>
     </div>
   </section>
@@ -182,7 +185,7 @@
           <div class="phase-count" id="phase-count"></div>
         </div>
       </div>
-      <button class="ghost-btn hold-release" id="hold-release" hidden>release</button>
+      <button class="ghost-btn hold-release" id="hold-release" hidden data-i18n="release">release</button>
       <div class="guide-cue" id="guide-cue" hidden></div>
       <div class="intention-line" id="intention-line" hidden></div>
       <div class="session-info">
@@ -190,8 +193,8 @@
         <span class="next-up" id="next-up" hidden></span>
       </div>
       <div class="session-controls">
-        <button class="ghost-btn" id="pause-btn">Pause</button>
-        <button class="ghost-btn" id="end-btn">End</button>
+        <button class="ghost-btn" id="pause-btn" data-i18n="pause">Pause</button>
+        <button class="ghost-btn" id="end-btn" data-i18n="end">End</button>
         <button class="ghost-btn icon-btn" id="fullscreen-btn" title="Fullscreen" hidden>
           <svg class="icon icon-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
           <svg class="icon icon-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M16 3v3a2 2 0 0 0 2 2h3"/><path d="M8 21v-3a2 2 0 0 0-2-2H3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
@@ -210,24 +213,24 @@
     <div class="session-ground" id="session-ground" hidden>
       <h2 id="ground-name"></h2>
       <ul class="ground-lines" id="ground-lines"></ul>
-      <button class="primary-btn" id="ground-begin">Begin</button>
-      <p class="ground-hint">take a moment — begin when you're ready</p>
+      <button class="primary-btn" id="ground-begin" data-i18n="begin">Begin</button>
+      <p class="ground-hint" data-i18n="groundHint">take a moment — begin when you're ready</p>
     </div>
     <div class="session-done" id="session-done" hidden>
-      <h2>Well done.</h2>
+      <h2 data-i18n="wellDone">Well done.</h2>
       <p id="done-summary"></p>
       <div class="mood-row" id="mood-row">
-        <span class="mood-q">how do you feel?</span>
+        <span class="mood-q" data-i18n="howDoYouFeel">how do you feel?</span>
         <div class="mood-btns">
-          <button class="ghost-btn mood-btn" data-mood="calmer">calmer</button>
-          <button class="ghost-btn mood-btn" data-mood="same">the same</button>
-          <button class="ghost-btn mood-btn" data-mood="tense">still tense</button>
+          <button class="ghost-btn mood-btn" data-mood="calmer" data-i18n="calmer">calmer</button>
+          <button class="ghost-btn mood-btn" data-mood="same" data-i18n="theSame">the same</button>
+          <button class="ghost-btn mood-btn" data-mood="tense" data-i18n="stillTense">still tense</button>
         </div>
       </div>
       <p class="mood-thanks" id="mood-thanks" hidden>noted — see you at the next breath</p>
       <div class="preview-actions">
-        <button class="primary-btn" id="again-btn">Once more</button>
-        <button class="ghost-btn" id="done-home-btn">Home</button>
+        <button class="primary-btn" id="again-btn" data-i18n="onceMore">Once more</button>
+        <button class="ghost-btn" id="done-home-btn" data-i18n="home">Home</button>
       </div>
     </div>
   </section>
@@ -239,25 +242,25 @@
       <h2 id="builder-title">Create a sequence</h2>
       <div id="builder-visual">
         <label class="field">
-          <span>Name</span>
+          <span data-i18n="name">Name</span>
           <input type="text" id="builder-name" maxlength="100" placeholder="Evening wind-down">
         </label>
         <div class="field">
-          <span>Phases</span>
+          <span data-i18n="phases">Phases</span>
           <div class="phase-rows" id="phase-rows"></div>
           <div class="phase-add-row">
-            <button class="pill-btn" data-add-kind="inhale">+ inhale</button>
-            <button class="pill-btn" data-add-kind="hold">+ hold</button>
-            <button class="pill-btn" data-add-kind="exhale">+ exhale</button>
+            <button class="pill-btn" data-add-kind="inhale" data-i18n="addIn">+ inhale</button>
+            <button class="pill-btn" data-add-kind="hold" data-i18n="addHold">+ hold</button>
+            <button class="pill-btn" data-add-kind="exhale" data-i18n="addOut">+ exhale</button>
           </div>
         </div>
         <label class="field field-inline">
-          <span>Cycles</span>
+          <span data-i18n="cyclesCap">Cycles</span>
           <input type="number" id="builder-cycles" min="1" max="500" value="10">
         </label>
       </div>
       <label class="field" id="builder-text-field" hidden>
-        <span>Text</span>
+        <span data-i18n="text">Text</span>
         <textarea id="builder-text" rows="9" spellcheck="false"></textarea>
         <p class="builder-text-help">
           one phase per line — <code>in 4</code>, <code>hold 7</code>, <code>out 8</code> —
@@ -269,8 +272,8 @@
       <p class="builder-summary" id="builder-summary"></p>
       <p class="form-error" id="builder-error" role="alert"></p>
       <div class="preview-actions">
-        <button class="primary-btn" id="builder-save">Save</button>
-        <button class="ghost-btn" id="builder-try">Try without saving</button>
+        <button class="primary-btn" id="builder-save" data-i18n="save">Save</button>
+        <button class="ghost-btn" id="builder-try" data-i18n="tryWithout">Try without saving</button>
       </div>
       <p class="builder-note" id="builder-note"></p>
     </div>
@@ -280,11 +283,15 @@
     <div class="qr-box">
       <p class="qr-caption" id="qr-caption"></p>
       <div class="qr-holder" id="qr-holder"></div>
-      <p class="qr-hint">scan to open this practice · long-press or right-click to save the code</p>
+      <p class="qr-hint" data-i18n="qrHint">scan to open this practice · long-press or right-click to save the code</p>
+      <label class="share-intention-row" id="share-intention-row" hidden>
+        <input type="checkbox" id="share-include-intention">
+        <span data-i18n="shareIntention">include the intention</span>
+      </label>
       <div class="preview-actions share-dialog-actions">
-        <button class="ghost-btn" id="share-copy">Copy link</button>
-        <button class="ghost-btn" id="share-native" hidden>Share…</button>
-        <button class="ghost-btn" id="qr-close">Close</button>
+        <button class="ghost-btn" id="share-copy" data-i18n="copyLink">Copy link</button>
+        <button class="ghost-btn" id="share-native" hidden data-i18n="shareDots">Share…</button>
+        <button class="ghost-btn" id="qr-close" data-i18n="close">Close</button>
       </div>
     </div>
   </dialog>
@@ -292,6 +299,8 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="js/qr.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/i18n-practices.js"></script>
   <script src="js/styles.js"></script>
   <script src="js/model.js"></script>
   <script src="js/app.js"></script>

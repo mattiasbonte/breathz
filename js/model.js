@@ -30,14 +30,20 @@
   // ---------------------------------------------------------- formatting
 
   const fmtSecs = (s) => (Number.isInteger(s) ? String(s) : s.toFixed(1));
-  const fmtCycles = (n) => `${n} cycle${n === 1 ? "" : "s"}`;
+
+  // display words are injectable so the UI language can localize them;
+  // everything the model PARSES or SERIALIZES stays canonical English
+  let W = { min: "min", cycle: "cycle", cycles: "cycles", parts: "parts" };
+  function setStrings(words) { Object.assign(W, words); }
+
+  const fmtCycles = (n) => `${n} ${n === 1 ? W.cycle : W.cycles}`;
 
   function fmtDuration(totalSecs) {
     const m = Math.floor(totalSecs / 60);
     const s = Math.round(totalSecs % 60);
     if (m === 0) return `${s}s`;
-    if (s === 0) return `${m} min`;
-    return `${m} min ${s}s`;
+    if (s === 0) return `${m} ${W.min}`;
+    return `${m} ${W.min} ${s}s`;
   }
 
   // ---------------------------------------------------------- normalizing
@@ -67,7 +73,7 @@
     if (segs.length === 1) {
       return `${fmtCycles(segs[0].cycles || 1)} · ${hasOpenHold(seq) ? "≈ " : ""}${dur}`;
     }
-    return `${segs.length} parts · ≈ ${dur}`;
+    return `${segs.length} ${W.parts} · ≈ ${dur}`;
   }
 
   // ---------------------------------------------------------- validation
@@ -323,7 +329,7 @@
   }
 
   window.BreathModel = {
-    KINDS, TEXT_KINDS, KIND_SHORT, practiceFingerprint,
+    KINDS, TEXT_KINDS, KIND_SHORT, practiceFingerprint, setStrings,
     fmtSecs, fmtCycles, fmtDuration,
     segmentsOf, isProgram, practiceDuration, practiceMeta, hasOpenHold,
     validatePractice, validateSegment,

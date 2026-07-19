@@ -455,6 +455,7 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 14px;
+  align-items: start; /* tall program cards must not stretch their row */
 }
 
 .seq-card {
@@ -508,6 +509,10 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   gap: 5px;
   margin: 12px 0 10px;
   flex-wrap: wrap;
+  align-content: flex-start;
+  /* reserve two chip rows so every card is the same height, regardless of
+     pattern length or language — calm grids have no ragged rows */
+  min-height: 52px;
 }
 
 .chip {
@@ -522,6 +527,15 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 .chip.hold   { color: var(--hold);   border-color: rgba(165, 180, 252, 0.35); }
 .chip.exhale { color: var(--exhale); border-color: rgba(240, 171, 252, 0.35); }
 .chip.seg    { color: var(--ink-dim); border-color: var(--line); }
+.chip-more {
+  font-family: inherit;
+  background: none;
+  cursor: pointer;
+  color: var(--accent);
+  border-color: rgba(125, 211, 252, 0.35);
+  transition: color 0.25s, border-color 0.25s;
+}
+.chip-more:hover { color: var(--ink); border-color: var(--accent); }
 
 .seq-card .meta {
   font-size: 0.78rem;
@@ -719,6 +733,16 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   font-size: 0.95rem;
   letter-spacing: 0.06em;
   line-height: 1.6;
+  opacity: 0.85;
+}
+
+.preview-actions.primary-row { margin-top: 38px; }
+.preview-actions.secondary-row {
+  margin-top: 16px;
+}
+.secondary-row .ghost-btn {
+  padding: 8px 14px;
+  font-size: 0.8rem;
   opacity: 0.85;
 }
 
@@ -1648,6 +1672,28 @@ body.paused .phase-label { opacity: 0.4; }
 }
 
 .foot-log { margin-top: 10px; }
+
+.foot-langs { margin-top: 14px; display: flex; justify-content: center; gap: 12px; }
+.lang-btn {
+  text-decoration: none;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+.lang-btn:hover { color: var(--ink-dim); }
+.lang-btn.active { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+.share-intention-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.share-intention-row input { accent-color: var(--accent); }
 
 /* ---------- session done extras ---------- */
 

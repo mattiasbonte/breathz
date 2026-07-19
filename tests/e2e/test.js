@@ -469,6 +469,62 @@ function check(name, cond) {
   });
   await page.reload({ waitUntil: "networkidle" });
 
+  // --- program cards collapse and expand
+  const prCard = page.locator('#preset-grid .seq-card:has-text("Power Rounds")');
+  const collapsedChips = await prCard.locator(".chip.seg").count();
+  check(`program card collapsed to one chip (${collapsedChips})`, collapsedChips === 1);
+  const moreLabel = await prCard.locator(".chip-more").textContent();
+  check(`summary chip labelled ("${moreLabel}")`, moreLabel === "view 9 parts");
+  await prCard.locator(".chip-more").click();
+  await page.waitForTimeout(150);
+  const prCard2 = page.locator('#preset-grid .seq-card:has-text("Power Rounds")');
+  const expandedChips = await prCard2.locator(".chip.seg").count();
+  check(`expanded shows all parts (${expandedChips} chips incl. show-less)`, expandedChips === 10);
+  check("still on home (expand didn't open preview)",
+    await page.evaluate(() => document.getElementById("screen-home").classList.contains("active")));
+  await prCard2.locator(".chip-more").click();
+  await page.waitForTimeout(150);
+  check("show less folds back",
+    (await page.locator('#preset-grid .seq-card:has-text("Power Rounds") .chip.seg').count()) === 1);
+
+  // --- languages: switch, persist, travel in links; intention checkbox
+  await page.locator('.lang-btn:has-text("FR")').click();
+  await page.waitForTimeout(300);
+  check("FR: deck title translates", (await page.textContent("#deck-title")) === "Pratiques");
+  check("FR: begin translates", (await page.textContent("#home-begin")) === "Commencer");
+  check("FR: mood chip translates",
+    (await page.locator('.mood-chip:has-text("stressé")').count()) === 1);
+  await page.locator('#preset-grid .seq-card:has-text("Box Breathing")').first().click();
+  await page.waitForSelector("#screen-preview.active");
+  const frDesc = await page.textContent("#preview-desc");
+  check(`FR: practice description translates ("${frDesc.slice(0, 28)}…")`, /[àéèêç]/.test(frDesc));
+  check("FR: persisted", (await page.evaluate(() => localStorage.getItem("breathz.lang"))) === "fr");
+  // intention checkbox: unchecked personal intention stays out of the link
+  await page.evaluate(() => localStorage.setItem("breathz.intention", "secret wish"));
+  await page.locator("#share-btn").click();
+  await page.waitForSelector(".qr-dialog[open]");
+  check("intention row shows", await page.locator("#share-intention-row").isVisible());
+  check("personal intention unchecked by default",
+    !(await page.isChecked("#share-include-intention")));
+  await page.locator("#share-copy").click();
+  let copied2 = await page.evaluate(() => navigator.clipboard.readText());
+  check("unchecked: link has no intention, carries lang",
+    !copied2.includes("&i=") && copied2.includes("&l=fr"));
+  await page.check("#share-include-intention");
+  await page.locator("#share-copy").click();
+  copied2 = await page.evaluate(() => navigator.clipboard.readText());
+  check("checked: intention travels", copied2.includes("i=secret%20wish"));
+  await page.locator("#qr-close").click();
+  await page.evaluate(() => localStorage.removeItem("breathz.intention"));
+  // &l= in a link switches the recipient's language
+  await page.goto(BASE + "/#s=i4-e6&c=3&n=Lang%20Test&l=de", { waitUntil: "networkidle" });
+  await page.waitForSelector("#screen-preview.active");
+  check("link language applies (DE)", (await page.textContent("#start-btn")) === "Beginnen");
+  // back to EN for the rest of the suite
+  await page.evaluate(() => localStorage.setItem("breathz.lang", "en"));
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.waitForSelector("#preset-grid .seq-card");
+
   // --- pwa bits
   const swCount = await page.evaluate(async () =>
     (await navigator.serviceWorker.getRegistrations()).length);

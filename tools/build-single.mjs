@@ -8,6 +8,8 @@ const css = readFileSync("css/app.css", "utf8");
 const styles = readFileSync("js/styles.js", "utf8");
 const model = readFileSync("js/model.js", "utf8");
 const qr = readFileSync("js/qr.js", "utf8");
+const i18n = readFileSync("js/i18n.js", "utf8");
+const i18nPractices = readFileSync("js/i18n-practices.js", "utf8");
 const app = readFileSync("js/app.js", "utf8");
 const favicon = readFileSync("icons/favicon.svg").toString("base64");
 
@@ -54,6 +56,8 @@ swap('<link rel="manifest" href="manifest.webmanifest">',
   `<link rel="manifest" href="data:application/manifest+json;base64,${Buffer.from(JSON.stringify(manifest)).toString("base64")}">`,
   "manifest");
 swap('<script src="js/qr.js"></script>', `<script>\n${inlineSafe(qr)}\n</script>`, "qr.js");
+swap('<script src="js/i18n.js"></script>', `<script>\n${inlineSafe(i18n)}\n</script>`, "i18n.js");
+swap('<script src="js/i18n-practices.js"></script>', `<script>\n${inlineSafe(i18nPractices)}\n</script>`, "i18n-practices.js");
 swap('<script src="js/styles.js"></script>', `<script>\n${inlineSafe(styles)}\n</script>`, "styles.js");
 swap('<script src="js/model.js"></script>', `<script>\n${inlineSafe(model)}\n</script>`, "model.js");
 swap('<script src="js/app.js"></script>', `<script>\n${inlineSafe(app)}\n</script>`, "app.js");
