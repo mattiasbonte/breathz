@@ -27,7 +27,7 @@ function check(name, cond) {
     document.getElementById("home-stage").getAnimations({ subtree: true }).length);
   check(`hero demo is breathing (${heroAnims} anims)`, heroAnims > 0);
   const presetCount = await page.locator("#preset-grid .seq-card").count();
-  check(`all presets render (${presetCount})`, presetCount === 23);
+  check(`all presets render (${presetCount})`, presetCount === 26);
 
   // --- moods filter practices
   const moodCount = await page.locator(".mood-chip").count();
@@ -43,7 +43,7 @@ function check(name, cond) {
   check("mood note shown", note.length > 10);
   await page.locator('.mood-chip:has-text("anxious")').click(); // deselect
   check("deselect restores all practices",
-    (await page.locator("#preset-grid .seq-card").count()) === 23);
+    (await page.locator("#preset-grid .seq-card").count()) === 26);
 
   // --- home Begin goes straight into a session
   await page.locator("#home-begin").click();
