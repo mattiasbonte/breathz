@@ -1695,6 +1695,52 @@ body.paused .phase-label { opacity: 0.4; }
 }
 .share-intention-row input { accent-color: var(--accent); }
 
+/* ---------- journal ---------- */
+
+.screen-journal {
+  position: relative;
+  min-height: calc(100dvh - 76px);
+  display: none;
+}
+.screen-journal.active { display: flex; }
+
+.journal-body {
+  margin: auto;
+  width: min(560px, calc(100vw - 48px));
+  padding: 40px 0 80px;
+  text-align: center;
+}
+.journal-body h2 {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 200;
+  background: linear-gradient(120deg, #e8ebf7 30%, #a5b4fc 70%, #f0abfc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.journal-count {
+  margin-top: 10px;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+}
+.journal-list {
+  list-style: none;
+  margin: 30px 0 10px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+.journal-list li {
+  padding: 12px 4px;
+  color: var(--ink-dim);
+  font-weight: 300;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  border-bottom: 1px solid var(--line);
+}
+.journal-list li:last-child { border-bottom: none; }
+
 /* ---------- session done extras ---------- */
 
 .mood-row { margin-top: 28px; }

@@ -23,6 +23,7 @@
   const LP = I18N.localizePractice;
   const kindWord = (k) => t(k === "inhale" ? "in" : k === "hold" ? "hold" : "out");
   const kindShort = (k) => t(k === "inhale" ? "inS" : k === "hold" ? "holdS" : "outS");
+  const dn = (seq) => seq.displayName ?? seq.name; // localized display name
 
   // pure data logic lives in js/model.js (window.BreathModel)
   const M = window.BreathModel;
@@ -474,7 +475,7 @@
 
   // ---------------------------------------------------------- screens
 
-  const SCREENS = ["home", "preview", "session", "builder", "practitioners"];
+  const SCREENS = ["home", "preview", "session", "builder", "practitioners", "journal"];
   function show(name) {
     for (const s of SCREENS) $(`screen-${s}`).classList.toggle("active", s === name);
     document.body.classList.toggle("in-session", name === "session");
@@ -673,7 +674,7 @@
 
   function cardHTML(seq) {
     return `
-      <h3>${escapeHTML(seq.name)}</h3>
+      <h3>${escapeHTML(dn(seq))}</h3>
       <div class="pattern">${patternHTML(seq, state.expandedCards.has(cardKey(seq)))}</div>
       <div class="meta">${practiceMeta(seq)}${seq.source === "local" ? t("yoursMark") : ""}</div>`;
   }
@@ -686,7 +687,7 @@
 
   function renderHomeHero() {
     const seq = homeSeq();
-    $("home-seq-name").textContent = seq.name;
+    $("home-seq-name").textContent = dn(LP(seq));
     $("home-seq-meta").textContent = practiceMeta(seq);
   }
 
@@ -776,7 +777,7 @@
 
     const n = journal().length;
     $("foot-log").hidden = n === 0;
-    if (n) $("log-count").textContent = n === 1 ? t("sessionBreathed") : t("sessionsBreathed", { n });
+    if (n) $("log-open").textContent = n === 1 ? t("sessionBreathed") : t("sessionsBreathed", { n });
   }
 
   // ------------------------------------------------ keyboard helpers
@@ -819,6 +820,32 @@
     }
   }
 
+  // ---------------------------------------------------------- journal page
+
+  const MOOD_WORD = { calmer: "calmer", same: "theSame", tense: "stillTense" };
+
+  function journalLine(e) {
+    const d = new Date(e.t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+    const preset = PRESETS.find((p) => p.name === e.seq);
+    const shown = preset ? dn(LP(preset)) : e.seq;
+    return `${d} — ${shown}, ${e.detail || fmtCycles(e.cycles)}${e.mood ? ` — ${t(MOOD_WORD[e.mood] || e.mood)}` : ""}`;
+  }
+
+  function openJournal() {
+    $("journal-title").textContent = t("journalTitle");
+    const n = journal().length;
+    $("journal-count").textContent = n === 1 ? t("sessionBreathed") : t("sessionsBreathed", { n });
+    $("journal-copy").textContent = t("copyLog");
+    const list = $("journal-list");
+    list.innerHTML = "";
+    journal().slice().reverse().forEach((e) => {
+      const li = document.createElement("li");
+      li.textContent = journalLine(e);
+      list.appendChild(li);
+    });
+    show("journal");
+  }
+
   // ---------------------------------------------------- practitioners page
 
   function practitionerExampleHash() {
@@ -826,6 +853,16 @@
   }
 
   function openPractitioners() {
+    document.querySelector(".practitioners-body h2").textContent = t("prTitle");
+    document.querySelector(".pr-lede").textContent = t("prLede");
+    const steps = document.querySelectorAll(".pr-steps li");
+    steps[0].innerHTML = t("prStep1");
+    steps[1].innerHTML = t("prStep2");
+    steps[2].innerHTML = t("prStep3");
+    document.querySelector(".pr-example-label").textContent = t("prExampleLabel");
+    $("pr-example-open").textContent = t("prSee");
+    $("pr-example-copy").textContent = t("prCopyEx");
+    document.querySelector(".pr-note").textContent = t("prNote");
     $("pr-example-url").textContent =
       `${window.location.origin}${window.location.pathname}`.replace(/index\.html$/, "") +
       "#s=i4-h7-e8&c=6&n=Evening wind-down&v=bloom&i=let the day go&by=Your Name";
@@ -838,10 +875,10 @@
     state.current = structuredClone(seq);
     // each practice opens in its natural animation; the picker still overrides
     if (validStyleId(seq.style)) currentStyleId = seq.style;
-    $("preview-name").textContent = seq.name;
+    const L = LP(seq);
+    $("preview-name").textContent = dn(L);
     $("preview-by").textContent = seq.by ? t("preparedBy", { name: seq.by }) : "";
     $("preview-by").hidden = !seq.by;
-    const L = LP(seq);
     $("preview-desc").textContent = L.description || "";
     $("preview-pattern").innerHTML = patternHTML(L, true, false); // detail view: all parts
     document.querySelector(".cycles-label").hidden = isProgram(seq);
@@ -966,7 +1003,7 @@
       const setup = this.loc.guide?.setup || [t("groundGeneric1"), t("groundGeneric2")];
       if (localStorage.getItem("breathz.ground") !== "0") {
         this.grounding = true;
-        $("ground-name").textContent = seq.name;
+        $("ground-name").textContent = dn(this.loc);
         const ul = $("ground-lines");
         ul.innerHTML = "";
         setup.forEach((line, i) => {
@@ -1182,7 +1219,7 @@
       journalAdd({ t: Date.now(), seq: this.seq.name, detail: practiceMeta(this.seq) });
       const n = journal().length;
       $("done-summary").textContent =
-        t("mindfulOf", { name: this.seq.name, meta: practiceMeta(this.seq) }) +
+        t("mindfulOf", { name: dn(this.loc || this.seq), meta: practiceMeta(this.seq) }) +
         (n > 1 ? " " + t("breathSessionN", { n }) : "");
       $("mood-row").hidden = false;
       $("mood-thanks").hidden = true;
@@ -1398,7 +1435,7 @@
       qr.addData(url);
       qr.make();
       $("qr-holder").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
-      $("qr-caption").textContent = state.current.name;
+      $("qr-caption").textContent = dn(LP(state.current));
     };
     $("share-btn").addEventListener("click", () => {
       const intention = state.current.intention ?? localStorage.getItem(LS_INTENTION);
@@ -1417,7 +1454,7 @@
       catch { prompt("Copy this link:", url); }
     });
     $("share-native").addEventListener("click", async () => {
-      try { await navigator.share({ title: `${state.current.name} — breathz`, url: shareUrl() }); }
+      try { await navigator.share({ title: `${dn(LP(state.current))} — breathz`, url: shareUrl() }); }
       catch { /* dismissed */ }
     });
     $("qr-close").addEventListener("click", () => $("qr-dialog").close());
@@ -1433,7 +1470,7 @@
     $("edit-btn").addEventListener("click", () => openBuilder(state.current));
     $("delete-btn").addEventListener("click", () => {
       const seq = state.current;
-      if (!confirm(t("deleteQ", { name: seq.name }))) return;
+      if (!confirm(t("deleteQ", { name: dn(LP(seq)) }))) return;
       state.local = state.local.filter((s) => s.id !== seq.id);
       saveLocal();
       backToHome(false);
@@ -1526,13 +1563,11 @@
       catch { prompt("Copy this link:", url); }
     });
 
-    // practice log — a text summary the client can paste to their practitioner
-    $("copy-log").addEventListener("click", async () => {
-      const lines = journal().map((e) => {
-        const d = new Date(e.t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-        return `${d} — ${e.seq}, ${e.detail || fmtCycles(e.cycles)}${e.mood ? ` — felt ${e.mood}` : ""}`;
-      });
-      const text = `${t("logHeader")}\n${lines.join("\n")}`;
+    // the practice log lives on its own quiet page, copyable from there
+    $("log-open").addEventListener("click", openJournal);
+    $("journal-back").addEventListener("click", () => backToHome(false));
+    $("journal-copy").addEventListener("click", async () => {
+      const text = `${t("logHeader")}\n${journal().slice().reverse().map(journalLine).join("\n")}`;
       try { await navigator.clipboard.writeText(text); toast(t("logCopied")); }
       catch { prompt("Copy your log:", text); }
     });
@@ -1696,7 +1731,7 @@
 
       if (e.code === "Escape") {
         if (typing) { t.blur(); return; }
-        if (screen === "preview" || screen === "builder" || screen === "practitioners") backToHome();
+        if (["preview", "builder", "practitioners", "journal"].includes(screen)) backToHome();
         return;
       }
 
@@ -1762,8 +1797,7 @@
     // shared link? (also handle links opened while the app is already running)
     const handleSharedHash = () => {
       if (window.location.hash === "#practitioners") {
-        openPractitioners();
-        history.replaceState(null, "", window.location.pathname);
+        openPractitioners(); // a stable, bookmarkable route — keep the hash
         return;
       }
       const shared = decodeShare(window.location.hash);

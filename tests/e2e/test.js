@@ -354,10 +354,17 @@ function check(name, cond) {
   // practice log (journal has entries from earlier in this run)
   check("practice log offer visible", await page.locator("#foot-log").isVisible());
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.locator("#copy-log").click();
+  await page.locator("#log-open").click();
+  await page.waitForSelector("#screen-journal.active");
+  check("journal page lists sessions",
+    (await page.locator("#journal-list li").count()) >= 1 &&
+    (await page.textContent("#journal-list")).includes("Tiny Test"));
+  await page.locator("#journal-copy").click();
   const log = await page.evaluate(() => navigator.clipboard.readText());
-  check(`practice log copies (${log.split("\\n").length} lines)`,
+  check("practice log copies from page",
     log.startsWith("my breathz practice log") && log.includes("Tiny Test"));
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
 
   // --- programs: multi-part sessions with open holds
   await page.locator('#preset-grid .seq-card:has-text("Power Rounds")').click();
@@ -494,11 +501,16 @@ function check(name, cond) {
   check("FR: begin translates", (await page.textContent("#home-begin")) === "Commencer");
   check("FR: mood chip translates",
     (await page.locator('.mood-chip:has-text("stressé")').count()) === 1);
-  await page.locator('#preset-grid .seq-card:has-text("Box Breathing")').first().click();
+  check("FR: card names translate",
+    (await page.locator('#preset-grid .seq-card:has-text("Respiration carrée")').count()) === 1);
+  await page.locator('#preset-grid .seq-card:has-text("Respiration carrée")').first().click();
   await page.waitForSelector("#screen-preview.active");
   const frDesc = await page.textContent("#preview-desc");
   check(`FR: practice description translates ("${frDesc.slice(0, 28)}…")`, /[àéèêç]/.test(frDesc));
   check("FR: persisted", (await page.evaluate(() => localStorage.getItem("breathz.lang"))) === "fr");
+  check("FR: display name translates",
+    (await page.textContent("#preview-name")) === "Respiration carrée");
+  // …but the share link keeps the canonical name so cross-language links work
   // intention checkbox: unchecked personal intention stays out of the link
   await page.evaluate(() => localStorage.setItem("breathz.intention", "secret wish"));
   await page.locator("#share-btn").click();
@@ -508,8 +520,8 @@ function check(name, cond) {
     !(await page.isChecked("#share-include-intention")));
   await page.locator("#share-copy").click();
   let copied2 = await page.evaluate(() => navigator.clipboard.readText());
-  check("unchecked: link has no intention, carries lang",
-    !copied2.includes("&i=") && copied2.includes("&l=fr"));
+  check("unchecked: link has no intention, carries lang + canonical name",
+    !copied2.includes("&i=") && copied2.includes("&l=fr") && copied2.includes("n=Box%20Breathing"));
   await page.check("#share-include-intention");
   await page.locator("#share-copy").click();
   copied2 = await page.evaluate(() => navigator.clipboard.readText());
@@ -521,6 +533,16 @@ function check(name, cond) {
   await page.waitForSelector("#screen-preview.active");
   check("link language applies (DE)", (await page.textContent("#start-btn")) === "Beginnen");
   // back to EN for the rest of the suite
+  await page.evaluate(() => localStorage.setItem("breathz.lang", "en"));
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.waitForSelector("#preset-grid .seq-card");
+
+  // --- practitioner page translates
+  await page.evaluate(() => localStorage.setItem("breathz.lang", "fr"));
+  await page.goto(BASE + "/#practitioners", { waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "networkidle" }); // re-boot so the stored language applies
+  await page.waitForSelector("#screen-practitioners.active");
+  check("FR practitioner page", (await page.textContent(".practitioners-body h2")) === "Pour les praticiens");
   await page.evaluate(() => localStorage.setItem("breathz.lang", "en"));
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.waitForSelector("#preset-grid .seq-card");
