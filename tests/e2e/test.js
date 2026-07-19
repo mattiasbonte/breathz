@@ -27,7 +27,7 @@ function check(name, cond) {
     document.getElementById("home-stage").getAnimations({ subtree: true }).length);
   check(`hero demo is breathing (${heroAnims} anims)`, heroAnims > 0);
   const presetCount = await page.locator("#preset-grid .seq-card").count();
-  check(`all presets render (${presetCount})`, presetCount === 21);
+  check(`all presets render (${presetCount})`, presetCount === 23);
 
   // --- moods filter practices
   const moodCount = await page.locator(".mood-chip").count();
@@ -43,7 +43,7 @@ function check(name, cond) {
   check("mood note shown", note.length > 10);
   await page.locator('.mood-chip:has-text("anxious")').click(); // deselect
   check("deselect restores all practices",
-    (await page.locator("#preset-grid .seq-card").count()) === 21);
+    (await page.locator("#preset-grid .seq-card").count()) === 23);
 
   // --- home Begin goes straight into a session
   await page.locator("#home-begin").click();
@@ -137,7 +137,7 @@ function check(name, cond) {
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.locator('#preset-grid .seq-card:has-text("Box Breathing")').first().click();
   const styleIds = await page.evaluate(() => window.BreathStyles.map((s) => s.id));
-  check(`17 styles present (${styleIds.length})`, styleIds.length === 17);
+  check(`18 styles present (${styleIds.length})`, styleIds.length === 18);
   for (const id of styleIds) {
     await page.evaluate((sid) => {
       const idx = window.BreathStyles.findIndex((s) => s.id === sid);

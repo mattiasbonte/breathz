@@ -1125,6 +1125,31 @@ body.paused .mandala-layer { animation-play-state: paused; }
   filter: blur(8px);
 }
 
+/* Feather */
+.feather-holder {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 56%; height: 56%;
+  margin: -28% 0 0 -28%;
+  animation: feather-hover 8s var(--ease-breath) infinite alternate;
+  will-change: transform;
+}
+.feather-holder svg { width: 100%; height: 100%; }
+@keyframes feather-hover {
+  from { transform: translateY(7px) rotate(-3deg); }
+  to   { transform: translateY(-9px) rotate(2.5deg); }
+}
+.feather-glow {
+  position: absolute;
+  left: 50%; top: 62%;
+  width: 52%; height: 34%;
+  margin: -17% 0 0 -26%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(196, 181, 253, 0.5), rgba(125, 211, 252, 0.18) 55%, transparent 75%);
+  filter: blur(14px);
+  will-change: transform, opacity;
+}
+
 /* Vision — the user's own image */
 .vision-halo {
   position: absolute; inset: 4%;

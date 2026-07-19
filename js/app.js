@@ -95,6 +95,12 @@
     { name: "Buteyko Soft Breath", style: "beacon", cycles: 15,
       description: "Reduced, gentle nasal breathing with a relaxed pause after the exhale — the Buteyko way to quiet over-breathing and air hunger.",
       phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 3 }, { kind: "hold", seconds: 3 }] },
+    { name: "Feather Breath", style: "feather", cycles: 12,
+      description: "Breathe so softly that a feather before your lips would never stir — a very slow, silent in-breath melting into a slow out-breath, no pause. If you can hear yourself breathe, soften further.",
+      phases: [{ kind: "inhale", seconds: 6 }, { kind: "exhale", seconds: 8 }] },
+    { name: "Breath of Fire", style: "fireflies", cycles: 60,
+      description: "Rapid, rhythmic, equal breaths through the nose, driven from the belly — about one full breath per second. A Kundalini classic for heat and alertness. Seated, empty stomach, stop at any dizziness; not during pregnancy.",
+      phases: [{ kind: "inhale", seconds: 0.5 }, { kind: "exhale", seconds: 0.5 }] },
     { name: "Kumbhaka 1-4-2", style: "triangle", cycles: 5,
       description: "The classical pranayama ratio: hold four times the inhale, exhale twice it. Advanced — build up gently and never strain the hold.",
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 16 }, { kind: "exhale", seconds: 8 }] },
@@ -145,13 +151,13 @@
       practices: ["4-7-8 Relaxing Breath", "Deep Sleep 4-8", "Wind Down"] },
     { id: "tired", label: "low energy",
       note: "Brisk, even breaths gently raise alertness. Stop if you feel light-headed.",
-      practices: ["Energize", "Bhastrika Bellows", "Kapalabhati Pace"] },
+      practices: ["Breath of Fire", "Energize", "Bhastrika Bellows", "Kapalabhati Pace"] },
     { id: "scattered", label: "unfocused",
       note: "Counting edges and corners anchors attention back in the body.",
       practices: ["Box Breathing", "Triangle Breathing", "Nadi Shodhana Pace"] },
     { id: "balanced", label: "balanced",
       note: "Coherent breathing keeps a good day steady — about five and a half breaths a minute.",
-      practices: ["Coherent Breathing", "Equal Breathing", "Ujjayi Pace"] },
+      practices: ["Coherent Breathing", "Feather Breath", "Equal Breathing", "Ujjayi Pace"] },
     { id: "deep", label: "going deeper",
       note: "Older traditions — yogic, Sufi, shamanic — used breath as a doorway. Take these slowly and seated.",
       practices: ["Power Rounds", "Deep Hold Ladder", "Sufi Heart Rhythm", "Nadi Shodhana Pace", "Rhythmic Journey", "Kumbhaka 1-4-2", "Buteyko Soft Breath"] },
@@ -242,7 +248,7 @@
     },
     // Directional cues: inhale glides up, exhale glides down, hold is a
     // level suspended shimmer (two barely-detuned tones beating slowly).
-    cue(kind, stacked) {
+    cue(kind, stacked, seconds) {
       if (!this.enabled || this.volume <= 0) return;
       this.ensure();
       if (!this.ctx) return;
@@ -261,6 +267,13 @@
         o.connect(g).connect(this.ctx.destination);
         o.start(at); o.stop(at + decay + 0.1);
       };
+
+      // rapid rhythms (breath of fire, bellows): a light alternating tick,
+      // not the full melodic pair — at 2 phases/second that would be mush
+      if (kind !== "hold" && seconds && seconds < 1.25) {
+        note(kind === "inhale" ? 392 : 329.63, t, peak * 0.5, 0.35);
+        return;
+      }
 
       if (kind === "inhale") {
         if (stacked) { note(392, t, peak * 0.9, 0.9); return; } // one short sip on top (G4)
@@ -818,7 +831,7 @@
       $("next-up").textContent = phase.nextTitle ? `then · ${phase.nextTitle}` : "";
       $("next-up").hidden = !phase.nextTitle;
       $("hold-release").hidden = !phase.open;
-      audio.cue(phase.kind, phase.stacked);
+      audio.cue(phase.kind, phase.stacked, phase.seconds);
       haptics.pulse(phase.kind);
 
       this.phaseDur = phase.open ? Infinity : phase.seconds * 1000;

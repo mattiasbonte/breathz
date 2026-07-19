@@ -649,8 +649,48 @@
     },
   };
 
+  // ------------------------------------------------------------ 18. feather
+  // The stillness is the feedback: breathe so softly the feather never
+  // stirs. It only drifts on ambient air (CSS hover); the breath shows as
+  // a warm glow beneath it, never as wind.
+
+  const feather = {
+    id: "feather",
+    name: "Feather",
+    hint: "breathe so softly the feather never stirs — only the glow answers",
+    build(stage) {
+      el(stage, "feather-glow");
+      const holder = el(stage, "feather-holder");
+      holder.innerHTML =
+        '<svg viewBox="0 0 100 100">' +
+        '<g fill="none" stroke-linecap="round">' +
+        '<path d="M30 88 C 26 60, 38 28, 68 8 C 74 34, 62 66, 34 86 Z" fill="rgba(200,214,255,0.10)" stroke="rgba(200,214,255,0.55)" stroke-width="1.5"/>' +
+        '<path d="M31 87 C 40 62, 52 34, 68 10" stroke="rgba(232,235,247,0.7)" stroke-width="1.6"/>' +
+        '<path d="M38 70 C 33 66, 30 62, 28 56" stroke="rgba(200,214,255,0.35)" stroke-width="1"/>' +
+        '<path d="M45 56 C 40 52, 36 47, 34 41" stroke="rgba(200,214,255,0.35)" stroke-width="1"/>' +
+        '<path d="M52 43 C 48 39, 45 34, 44 28" stroke="rgba(200,214,255,0.35)" stroke-width="1"/>' +
+        '<path d="M59 31 C 56 27, 54 23, 53 18" stroke="rgba(200,214,255,0.35)" stroke-width="1"/>' +
+        '<path d="M31 87 C 28 84, 26 82, 22 80" stroke="rgba(200,214,255,0.3)" stroke-width="1"/>' +
+        '<path d="M32 84 C 30 80, 27 78, 24 75" stroke="rgba(200,214,255,0.3)" stroke-width="1"/>' +
+        "</g></svg>";
+    },
+    set(stage, lv) {
+      const glow = stage.querySelector(".feather-glow");
+      glow.style.opacity = 0.15 + lv * 0.5;
+      glow.style.transform = `scale(${0.9 + lv * 0.15})`;
+    },
+    animate(stage, ctx) {
+      if (ctx.kind === "hold") return genericHold(stage, ctx.durMs);
+      const glow = stage.querySelector(".feather-glow");
+      return [fwd(glow, {
+        opacity: [0.15 + ctx.from * 0.5, 0.15 + ctx.to * 0.5],
+        transform: [`scale(${0.9 + ctx.from * 0.15})`, `scale(${0.9 + ctx.to * 0.15})`],
+      }, ctx.durMs)];
+    },
+  };
+
   window.BreathStyles = [
     orb, rings, bloom, box, triangle, tide, cosmos, sway, mandala, column, beacon,
-    nebula, veil, flower, moon, fireflies, vision,
+    nebula, veil, flower, moon, fireflies, feather, vision,
   ];
 })();
