@@ -294,6 +294,12 @@ function check(name, cond) {
   const groundLines = await page.locator("#ground-lines li").count();
   check(`grounding card shows (${groundName}, ${groundLines} lines)`,
     groundName === "Breath of Fire" && groundLines === 3);
+  check("grounding card offers a way back", await page.locator("#ground-back").isVisible());
+  await page.locator("#ground-back").click();
+  await page.waitForSelector("#screen-preview.active");
+  check("back from grounding returns to preview", true);
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#session-ground:not([hidden])");
   await page.locator("#ground-begin").click();
   await page.waitForSelector("#session-ground[hidden]", { state: "attached" });
   await page.waitForTimeout(700);

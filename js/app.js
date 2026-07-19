@@ -1554,6 +1554,7 @@
     $("pause-btn").addEventListener("click", () => session.paused ? session.resume() : session.pause());
     $("hold-release").addEventListener("click", () => session.releaseHold());
     $("ground-begin").addEventListener("click", () => { if (session.grounding) session.beginBreathing(); });
+    $("ground-back").addEventListener("click", () => { if (session.grounding) session.stop(); });
     $("end-btn").addEventListener("click", () => session.stop());
     $("again-btn").addEventListener("click", () => session.start(state.current));
     $("done-home-btn").addEventListener("click", () => backToHome(false));

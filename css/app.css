@@ -756,6 +756,11 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   font-weight: 300;
 }
 
+.ground-back {
+  margin-top: 26px;
+  opacity: 0.75;
+}
+
 .intention-help {
   margin-top: 14px;
   color: var(--ink-faint);
