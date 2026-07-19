@@ -619,7 +619,7 @@
     id: "vision",
     name: "Vision",
     hint: "your own image breathing with you — add one under “set an intention”",
-    _s: (lv) => 0.68 + lv * 0.32,
+    _s: (lv) => 0.74 + lv * 0.26,
     build(stage) {
       el(stage, "vision-halo");
       const disc = el(stage, "vision-disc");

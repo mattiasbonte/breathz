@@ -1572,15 +1572,20 @@
     // on this screen at the current zoom and focus.
     function paintVisionWin() {
       withVisionAspect((ia) => {
-        const win = $("vision-pos-win");
-        const { fw, fh } = visionGeom(window.innerWidth / window.innerHeight, ia, visionZoom());
+        const z = visionZoom();
         const [px, py] = (localStorage.getItem(LS_VFOCUS) || "50,50").split(",").map(Number);
-        const cx = fw / 2 + ((isFinite(px) ? px : 50) / 100) * (1 - fw);
-        const cy = fh / 2 + ((isFinite(py) ? py : 50) / 100) * (1 - fh);
-        win.style.width = `${(fw * 100).toFixed(2)}%`;
-        win.style.height = `${(fh * 100).toFixed(2)}%`;
-        win.style.left = `${((cx - fw / 2) * 100).toFixed(2)}%`;
-        win.style.top = `${((cy - fh / 2) * 100).toFixed(2)}%`;
+        const place = (elId, contAspect) => {
+          const box = $(elId);
+          const { fw, fh } = visionGeom(contAspect, ia, z);
+          const cx = fw / 2 + ((isFinite(px) ? px : 50) / 100) * (1 - fw);
+          const cy = fh / 2 + ((isFinite(py) ? py : 50) / 100) * (1 - fh);
+          box.style.width = `${(fw * 100).toFixed(2)}%`;
+          box.style.height = `${(fh * 100).toFixed(2)}%`;
+          box.style.left = `${((cx - fw / 2) * 100).toFixed(2)}%`;
+          box.style.top = `${((cy - fh / 2) * 100).toFixed(2)}%`;
+        };
+        place("vision-pos-win", window.innerWidth / window.innerHeight); // the backdrop
+        place("vision-pos-circ", 1); // the round Vision orb (square box, drawn as circle)
       });
     }
 

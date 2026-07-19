@@ -609,6 +609,12 @@ function check(name, cond) {
     document.getElementById("vb-clear").style.backgroundSize.includes("180")));
   const winW = await page.evaluate(() => parseFloat(document.getElementById("vision-pos-win").style.width));
   check(`crop window shrinks when zoomed (${winW.toFixed(0)}%)`, winW > 10 && winW < 100);
+  const circ = await page.evaluate(() => {
+    const r = document.getElementById("vision-pos-circ").getBoundingClientRect();
+    return { w: r.width, h: r.height };
+  });
+  check(`vision-orb circle previewed and round (${circ.w.toFixed(0)}x${circ.h.toFixed(0)}px)`,
+    circ.w > 10 && Math.abs(circ.w - circ.h) < 2);
   const frameBox = await page.locator("#vision-pos-frame").boundingBox();
   await page.mouse.click(frameBox.x + frameBox.width * 0.8, frameBox.y + frameBox.height * 0.25);
   await page.waitForTimeout(150);

@@ -728,6 +728,12 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   cursor: grab;
   touch-action: none; /* the gesture owns the pointer on touch screens */
 }
+.vision-pos-circ {
+  position: absolute;
+  border: 1.5px dashed rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+}
 .vision-pos-win {
   position: absolute;
   border: 1.5px solid rgba(255, 255, 255, 0.9);
@@ -953,8 +959,8 @@ body.chrome-idle .phase-count { opacity: 0.4; }
 
 .orb-wrap {
   position: relative;
-  width: min(76vmin, 540px);
-  height: min(76vmin, 540px);
+  width: min(84vmin, 620px);
+  height: min(84vmin, 620px);
   display: grid;
   place-items: center;
 }
@@ -1351,18 +1357,30 @@ body.paused .mandala-layer { animation-play-state: paused; }
 
 /* Vision — the user's own image */
 .vision-halo {
-  position: absolute; inset: 4%;
+  position: absolute; inset: -2%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(196, 181, 253, 0.45) 30%, rgba(125, 211, 252, 0.2) 55%, transparent 72%);
   filter: blur(16px);
 }
 .vision-disc {
-  position: absolute; inset: 12%;
+  position: absolute; inset: 4%;
   border-radius: 50%;
   background-size: cover;
   background-position: center;
   border: 1px solid rgba(200, 214, 255, 0.35);
-  box-shadow: 0 0 40px rgba(129, 140, 248, 0.25);
+  box-shadow: 0 0 60px rgba(129, 140, 248, 0.3);
+  /* a remembered image, not a photograph */
+  filter: blur(2px) saturate(0.72) brightness(0.88);
+  overflow: hidden;
+}
+.vision-disc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 42%, transparent 34%, rgba(10, 14, 31, 0.45) 100%),
+    linear-gradient(160deg, rgba(129, 140, 248, 0.16), rgba(125, 211, 252, 0.08) 55%, rgba(196, 181, 253, 0.15));
 }
 .vision-disc.vision-empty {
   background:
