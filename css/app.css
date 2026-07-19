@@ -1230,6 +1230,58 @@ body.paused .stage * { animation-play-state: paused; }
 
 body.paused .phase-label { opacity: 0.4; }
 
+/* grounding card — how to breathe this one, read at your own pace */
+.session-ground {
+  text-align: center;
+  padding: 0 24px;
+  max-width: 560px;
+}
+.session-ground h2 {
+  font-size: clamp(1.6rem, 4.5vw, 2.3rem);
+  font-weight: 200;
+  background: linear-gradient(120deg, #e8ebf7 30%, #a5b4fc 70%, #f0abfc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ground-lines {
+  list-style: none;
+  margin: 28px 0 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ground-lines li {
+  color: var(--ink-dim);
+  font-weight: 300;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  opacity: 0;
+  animation: ground-line-in 0.9s var(--ease-breath) forwards;
+}
+@keyframes ground-line-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.ground-hint {
+  margin-top: 18px;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+}
+
+.guide-cue {
+  color: var(--ink-dim);
+  font-weight: 300;
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+  text-align: center;
+  max-width: min(500px, 84vw);
+  animation: ground-line-in 0.8s var(--ease-breath);
+}
+
 .session-done {
   text-align: center;
   padding: 0 24px;

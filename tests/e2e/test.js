@@ -14,7 +14,7 @@ function check(name, cond) {
 (async () => {
   const browser = await chromium.launch({ executablePath: "/usr/bin/chromium" });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  await page.addInitScript(() => localStorage.setItem("breathz.preroll", "0")); // tests skip the countdown
+  await page.addInitScript(() => { localStorage.setItem("breathz.preroll", "0"); localStorage.setItem("breathz.ground", "0"); }); // tests skip countdown + grounding
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
 
@@ -284,6 +284,34 @@ function check(name, cond) {
   const namesAfter = await page.locator("#preset-grid .seq-card h3").allTextContents();
   check("unstar returns preset to natural order", namesAfter[1] !== "Ujjayi Pace");
 
+  // --- grounding card (default behaviour) + in-session guide cues
+  await page.evaluate(() => localStorage.removeItem("breathz.ground"));
+  await page.locator('#preset-grid .seq-card:has-text("Breath of Fire")').click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.locator("#start-btn").click();
+  await page.waitForSelector("#session-ground:not([hidden])");
+  const groundName = await page.textContent("#ground-name");
+  const groundLines = await page.locator("#ground-lines li").count();
+  check(`grounding card shows (${groundName}, ${groundLines} lines)`,
+    groundName === "Breath of Fire" && groundLines === 3);
+  await page.locator("#ground-begin").click();
+  await page.waitForSelector("#session-ground[hidden]", { state: "attached" });
+  await page.waitForTimeout(700);
+  const fireCue = await page.textContent("#guide-cue");
+  check(`guide cue shows early ("${fireCue}")`,
+    ["passive — belly springs back", "snap the navel in"].includes(fireCue));
+  await page.locator("#end-btn").click();
+  await page.waitForSelector("#screen-preview.active");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#screen-home.active");
+  await page.evaluate(() => localStorage.setItem("breathz.ground", "0"));
+
+  // --- popularity ordering
+  const topNames = await page.locator("#preset-grid .seq-card h3").allTextContents();
+  const presetTop = topNames.filter((n) => n !== "Tiny Test"); // local sorts first
+  check(`popular practices lead (${presetTop.slice(0, 3).join(" | ")})`,
+    presetTop[0] === "Box Breathing" && presetTop[1] === "4-7-8 Relaxing Breath" && presetTop[2] === "Physiological Sigh");
+
   // --- pre-roll countdown (default behaviour)
   await page.evaluate(() => localStorage.setItem("breathz.preroll", "3"));
   await page.locator("#preset-grid .seq-card").first().click();
@@ -448,7 +476,7 @@ function check(name, cond) {
 
   // --- mobile 320px: no horizontal scroll
   const mob = await browser.newPage({ viewport: { width: 320, height: 640 } });
-  await mob.addInitScript(() => localStorage.setItem("breathz.preroll", "0"));
+  await mob.addInitScript(() => { localStorage.setItem("breathz.preroll", "0"); localStorage.setItem("breathz.ground", "0"); });
   await mob.goto(BASE, { waitUntil: "networkidle" });
   await mob.waitForSelector("#preset-grid .seq-card");
   const hs = await mob.evaluate(() =>

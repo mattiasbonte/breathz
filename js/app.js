@@ -46,95 +46,193 @@
   const PRESETS = [
     { name: "Box Breathing", style: "box", cycles: 10,
       description: "Equal four-count breathing used by Navy SEALs to stay calm and focused. Inhale, hold, exhale, hold — each for 4 seconds.",
+      guide: { setup: [
+          "Sit tall, feet grounded, hands resting anywhere comfortable.",
+          "Breathe through the nose, quiet and unhurried.",
+          "Four equal sides — let the count hold your attention.",
+        ], cues: { inhale: "fill from the belly upward", hold: "stay soft — no strain", exhale: "empty slowly, all the way" } },
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }, { kind: "hold", seconds: 4 }] },
     { name: "4-7-8 Relaxing Breath", style: "bloom", cycles: 6,
       description: "Dr. Andrew Weil's tranquilizing breath. Great before sleep: inhale 4, hold 7, exhale slowly for 8.",
+      guide: { setup: [
+          "Rest the tip of your tongue behind your upper front teeth.",
+          "Inhale quietly through the nose; exhale through the mouth with a soft whoosh.",
+        ], cues: { inhale: "quietly, through the nose", hold: "relax into the fullness", exhale: "whoosh — out through the mouth" } },
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 7 }, { kind: "exhale", seconds: 8 }] },
     { name: "Physiological Sigh", style: "orb", cycles: 6,
       description: "Two stacked inhales then a long sigh out — the fastest known way to calm a spiking nervous system.",
+      guide: { setup: [
+          "Two inhales through the nose: a deep one, then a short sip on top.",
+          "Then let everything go in one long, unhurried sigh out the mouth.",
+        ], cues: { inhale: "nose — deep, then the sip", exhale: "long sigh — jaw loose" } },
       phases: [{ kind: "inhale", seconds: 2.5 }, { kind: "inhale", seconds: 1 }, { kind: "exhale", seconds: 6 }] },
     { name: "Coherent Breathing", style: "sway", cycles: 15,
       description: "Slow, even breathing at ~5.5 breaths per minute to balance the nervous system and improve HRV.",
+      guide: { setup: [
+          "Sit comfortably, spine easy, shoulders heavy.",
+          "Smooth nose breathing — no edges between the in and the out.",
+        ], cues: { inhale: "smooth and silent", exhale: "equally smooth out" } },
       phases: [{ kind: "inhale", seconds: 5.5 }, { kind: "exhale", seconds: 5.5 }] },
-    { name: "Extended Exhale", style: "column", cycles: 12,
-      description: "Exhaling longer than you inhale activates the parasympathetic system. Simple and effective stress relief.",
-      phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
     { name: "Deep Sleep 4-8", style: "beacon", cycles: 12,
       description: "Exhaling twice as long as you inhale. A simple 2:1 rhythm that eases the body toward sleep.",
+      guide: { setup: [
+          "Best lying down, eyes closed.",
+          "Nose breathing — let each long exhale sink you a little deeper.",
+        ], cues: { inhale: "gentle, no effort", exhale: "twice as long — sink" } },
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 8 }] },
-    { name: "Triangle Breathing", style: "triangle", cycles: 10,
-      description: "A gentler cousin of box breathing: inhale, hold, exhale — three sides, four counts each.",
-      phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }] },
+    { name: "Extended Exhale", style: "column", cycles: 12,
+      description: "Exhaling longer than you inhale activates the parasympathetic system. Simple and effective stress relief.",
+      guide: { setup: [
+          "Sit or lie comfortably; breathe through the nose.",
+          "The exhale leads here — a touch longer each time, never forced.",
+        ], cues: { inhale: "easy and light", exhale: "longer than the in — let go" } },
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+    { name: "Breath of Fire", style: "fireflies", cycles: 60,
+      description: "Rapid, rhythmic, equal breaths through the nose, driven from the belly — about one full breath per second. A Kundalini classic for heat and alertness. Seated, empty stomach, stop at any dizziness; not during pregnancy.",
+      guide: { setup: [
+          "Sit tall. All the work happens below the navel.",
+          "The exhale is a quick pump of the belly — the inhale then happens by itself.",
+          "Face, shoulders and chest stay completely relaxed. Stop at any dizziness.",
+        ], cues: { inhale: "passive — belly springs back", exhale: "snap the navel in" } },
+      phases: [{ kind: "inhale", seconds: 0.5 }, { kind: "exhale", seconds: 0.5 }] },
     { name: "Equal Breathing", style: "rings", cycles: 15,
       description: "Sama Vritti — even, unforced breaths to steady attention and restore balance.",
+      guide: { setup: [
+          "Sit at ease; soften your gaze or close your eyes.",
+          "Nose breathing, both directions the same length — balance, not effort.",
+        ], cues: { inhale: "count evenly in", exhale: "the same length out" } },
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 4 }] },
+    { name: "Triangle Breathing", style: "triangle", cycles: 10,
+      description: "A gentler cousin of box breathing: inhale, hold, exhale — three sides, four counts each.",
+      guide: { setup: [
+          "Sit tall and settle your weight.",
+          "Three equal sides: in, a soft pause at the top, and out.",
+        ], cues: { inhale: "climb gently", hold: "rest at the top", exhale: "release down the far side" } },
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }] },
+    { name: "Power Rounds", style: "cosmos",
+      description: "Three rounds of deep rhythmic breathing, each ending in a long hold on empty lungs — release whenever your body asks — and a 15-second recovery hold. Powerful and intense. Only seated or lying down, never in or near water, never while driving. Stop at any strong dizziness.",
+      guide: { setup: [
+          "Lie down or sit well-supported. Never in water, never driving.",
+          "Rounds of full, deep breaths — in through the nose, letting go out the mouth.",
+          "After each round: exhale, and rest empty until your body clearly asks to breathe.",
+        ] },
+      segments: [
+        { title: "round 1 · 30 deep breaths", note: "full waves — in the nose, loose out the mouth", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
+        { title: "hold on empty — release when you must", note: "everything relaxed — the stillness after the storm", cycles: 1, phases: [{ kind: "hold", seconds: 60, open: true }] },
+        { title: "recovery breath", note: "one big inhale — hold, soften the face", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 3 }] },
+        { title: "round 2 · 30 deep breaths", note: "find the wave again — steady, not rushed", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
+        { title: "hold on empty", note: "let the quiet hold you", cycles: 1, phases: [{ kind: "hold", seconds: 75, open: true }] },
+        { title: "recovery breath", note: "big inhale — hold, and soften", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 3 }] },
+        { title: "round 3 · 30 deep breaths", note: "last round — deep and generous", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
+        { title: "final hold on empty", note: "nothing to do — release when the urge is clear", cycles: 1, phases: [{ kind: "hold", seconds: 90, open: true }] },
+        { title: "recovery — rest in the after-glow", note: "breathe normally and notice", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 4 }] },
+      ] },
     { name: "Wind Down", style: "cosmos", cycles: 8,
       description: "A slow settling pattern: deep inhale, brief pause, long releasing exhale.",
+      guide: { setup: [
+          "Evening pace: dim what you can, drop your shoulders.",
+          "Deep in, the briefest pause, and a long letting-go out.",
+        ], cues: { inhale: "deep and slow", hold: "just a moment", exhale: "let the day drain out" } },
       phases: [{ kind: "inhale", seconds: 5 }, { kind: "hold", seconds: 1.5 }, { kind: "exhale", seconds: 8 }] },
     { name: "Ujjayi Pace", style: "tide", cycles: 12,
       description: "Slow oceanic yoga breathing: long steady inhales and exhales through the nose with a soft throat constriction.",
+      guide: { setup: [
+          "Breathe through the nose with a gentle narrowing at the back of the throat —",
+          "a soft ocean sound, like fogging a mirror with your mouth closed.",
+        ], cues: { inhale: "ocean sound, steady in", exhale: "same soft sound out" } },
       phases: [{ kind: "inhale", seconds: 6 }, { kind: "exhale", seconds: 6 }] },
     { name: "Energize", style: "mandala", cycles: 20,
       description: "Faster rhythmic breathing to wake up body and mind. Stop if you feel light-headed.",
+      guide: { setup: [
+          "Sit tall, chest open.",
+          "Brisk, even nose breaths — lively but never strained.",
+        ], cues: { inhale: "crisp in", exhale: "crisp out" } },
       phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 2 }] },
+    { name: "Feather Breath", style: "feather", cycles: 12,
+      description: "Breathe so softly that a feather before your lips would never stir — a very slow, silent in-breath melting into a slow out-breath, no pause. If you can hear yourself breathe, soften further.",
+      guide: { setup: [
+          "Imagine a feather resting just before your lips.",
+          "Breathe so softly it never stirs — silent, tiny, effortless.",
+        ], cues: { inhale: "barely there", exhale: "even softer" } },
+      phases: [{ kind: "inhale", seconds: 6 }, { kind: "exhale", seconds: 8 }] },
     { name: "Nadi Shodhana Pace", style: "sway", cycles: 12,
       description: "The timing of yogic alternate-nostril breathing: close one nostril, inhale, hold, exhale through the other, then switch sides each cycle. Balancing and clarifying.",
+      guide: { setup: [
+          "Right thumb closes the right nostril, ring finger the left.",
+          "Inhale left, pause, exhale right — then switch sides each cycle.",
+        ], cues: { inhale: "one nostril, unhurried", hold: "both closed, easy", exhale: "the other side, fully" } },
       phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+    { name: "Kapalabhati Pace", style: "rings", cycles: 30,
+      description: "Skull-shining breath: a passive inhale, then a short sharp exhale from the belly. A cleansing yogic kriya — seated, empty stomach, stop at any dizziness.",
+      guide: { setup: [
+          "Sit tall, one hand on the belly if it helps.",
+          "Short, sharp exhales from the belly — the inhale is passive and quiet.",
+          "Stop and breathe normally at any dizziness.",
+        ], cues: { inhale: "let it come by itself", exhale: "sharp — from the belly" } },
+      phases: [{ kind: "inhale", seconds: 1.5 }, { kind: "exhale", seconds: 0.5 }] },
+    { name: "Bhastrika Bellows", style: "column", cycles: 30,
+      description: "Yogic bellows breath — vigorous equal in and out through the nose. Practice seated on an empty stomach and stop at any dizziness. Not during pregnancy or with high blood pressure.",
+      guide: { setup: [
+          "Seated, spine tall, empty stomach.",
+          "Vigorous and equal, in and out through the nose — like working a bellows.",
+          "Stop at any dizziness; skip entirely during pregnancy or with high blood pressure.",
+        ], cues: { inhale: "strong pull in", exhale: "strong push out" } },
+      phases: [{ kind: "inhale", seconds: 1 }, { kind: "exhale", seconds: 1 }] },
+    { name: "Buteyko Soft Breath", style: "beacon", cycles: 15,
+      description: "Reduced, gentle nasal breathing with a relaxed pause after the exhale — the Buteyko way to quiet over-breathing and air hunger.",
+      guide: { setup: [
+          "Nose only. Jaw soft, tongue resting on the palate.",
+          "Smaller, quieter breaths than feel natural — a gentle air hunger is the point.",
+        ], cues: { inhale: "small and silent", exhale: "soft, incomplete", hold: "rest — comfortably empty" } },
+      phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 3 }, { kind: "hold", seconds: 3 }] },
     { name: "Sufi Heart Rhythm", style: "mandala", cycles: 12,
       description: "Even, devotional breathing in the Sufi manner — steady counts with a soft pause at each turn, attention resting in the heart.",
+      guide: { setup: [
+          "Sit with dignity; let attention settle in the centre of the chest.",
+          "Even counts with a soft pause at each turn — breathe as if through the heart.",
+        ], cues: { inhale: "in through the heart", hold: "rest there", exhale: "out from the heart" } },
       phases: [{ kind: "inhale", seconds: 5 }, { kind: "hold", seconds: 1 }, { kind: "exhale", seconds: 5 }, { kind: "hold", seconds: 1 }] },
     { name: "Rhythmic Journey", style: "cosmos", cycles: 40,
       description: "Shamanic-style connected breathing: no pauses, like breathing to a steady drum. Sit or lie down, and return to normal breath if you feel dizzy or tingly.",
+      guide: { setup: [
+          "Lie down or sit well-supported; eyes closed.",
+          "Connected breath — the in flows into the out with no gap, like a drumbeat.",
+          "Tingling or dizziness means: return to normal breathing and rest.",
+        ], cues: { inhale: "ride the rhythm in", exhale: "no pause — flow out" } },
       phases: [{ kind: "inhale", seconds: 2.5 }, { kind: "exhale", seconds: 2.5 }] },
-    { name: "Bhastrika Bellows", style: "column", cycles: 30,
-      description: "Yogic bellows breath — vigorous equal in and out through the nose. Practice seated on an empty stomach and stop at any dizziness. Not during pregnancy or with high blood pressure.",
-      phases: [{ kind: "inhale", seconds: 1 }, { kind: "exhale", seconds: 1 }] },
-    { name: "Kapalabhati Pace", style: "rings", cycles: 30,
-      description: "Skull-shining breath: a passive inhale, then a short sharp exhale from the belly. A cleansing yogic kriya — seated, empty stomach, stop at any dizziness.",
-      phases: [{ kind: "inhale", seconds: 1.5 }, { kind: "exhale", seconds: 0.5 }] },
-    { name: "Buteyko Soft Breath", style: "beacon", cycles: 15,
-      description: "Reduced, gentle nasal breathing with a relaxed pause after the exhale — the Buteyko way to quiet over-breathing and air hunger.",
-      phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 3 }, { kind: "hold", seconds: 3 }] },
-    { name: "Feather Breath", style: "feather", cycles: 12,
-      description: "Breathe so softly that a feather before your lips would never stir — a very slow, silent in-breath melting into a slow out-breath, no pause. If you can hear yourself breathe, soften further.",
-      phases: [{ kind: "inhale", seconds: 6 }, { kind: "exhale", seconds: 8 }] },
-    { name: "Breath of Fire", style: "fireflies", cycles: 60,
-      description: "Rapid, rhythmic, equal breaths through the nose, driven from the belly — about one full breath per second. A Kundalini classic for heat and alertness. Seated, empty stomach, stop at any dizziness; not during pregnancy.",
-      phases: [{ kind: "inhale", seconds: 0.5 }, { kind: "exhale", seconds: 0.5 }] },
-    { name: "Kumbhaka 1-4-2", style: "triangle", cycles: 5,
-      description: "The classical pranayama ratio: hold four times the inhale, exhale twice it. Advanced — build up gently and never strain the hold.",
-      phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 16 }, { kind: "exhale", seconds: 8 }] },
-    { name: "Power Rounds", style: "cosmos",
-      description: "Three rounds of deep rhythmic breathing, each ending in a long hold on empty lungs — release whenever your body asks — and a 15-second recovery hold. Powerful and intense. Only seated or lying down, never in or near water, never while driving. Stop at any strong dizziness.",
-      segments: [
-        { title: "round 1 · 30 deep breaths", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
-        { title: "hold on empty — release when you must", cycles: 1, phases: [{ kind: "hold", seconds: 60, open: true }] },
-        { title: "recovery breath", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 3 }] },
-        { title: "round 2 · 30 deep breaths", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
-        { title: "hold on empty", cycles: 1, phases: [{ kind: "hold", seconds: 75, open: true }] },
-        { title: "recovery breath", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 3 }] },
-        { title: "round 3 · 30 deep breaths", cycles: 30, phases: [{ kind: "inhale", seconds: 2 }, { kind: "exhale", seconds: 1.5 }] },
-        { title: "final hold on empty", cycles: 1, phases: [{ kind: "hold", seconds: 90, open: true }] },
-        { title: "recovery — rest in the after-glow", cycles: 1, phases: [{ kind: "inhale", seconds: 2 }, { kind: "hold", seconds: 15 }, { kind: "exhale", seconds: 4 }] },
-      ] },
     { name: "Deep Hold Ladder", style: "moon",
       description: "Breath-hold training: easy breathing between progressively longer holds after a full inhale, ending with one open hold for as long as feels comfortable. Builds CO₂ tolerance gently — seated only, never strain, never practice holds in water.",
+      guide: { setup: [
+          "Seated only — never practice breath holds in water.",
+          "Easy breathing between holds; the holds themselves stay relaxed, never strained.",
+        ] },
       segments: [
-        { title: "settle", cycles: 4, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
-        { title: "hold · 30", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 30 }, { kind: "exhale", seconds: 8 }] },
-        { title: "breathe easy", cycles: 3, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
-        { title: "hold · 45", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 45 }, { kind: "exhale", seconds: 8 }] },
-        { title: "breathe easy", cycles: 3, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
-        { title: "long hold — as long as comfortable", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 60, open: true }, { kind: "exhale", seconds: 8 }] },
-        { title: "soften", cycles: 4, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 8 }] },
+        { title: "settle", note: "easy nose breathing — arrive", cycles: 4, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "hold · 30", note: "full breath in — then everything soft", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 30 }, { kind: "exhale", seconds: 8 }] },
+        { title: "breathe easy", note: "recover — no rush", cycles: 3, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "hold · 45", note: "soft face, soft hands", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 45 }, { kind: "exhale", seconds: 8 }] },
+        { title: "breathe easy", note: "let the heart settle", cycles: 3, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "long hold — as long as comfortable", note: "release the moment it stops being easy", cycles: 1, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 60, open: true }, { kind: "exhale", seconds: 8 }] },
+        { title: "soften", note: "long, kind exhales to finish", cycles: 4, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 8 }] },
       ] },
+    { name: "Kumbhaka 1-4-2", style: "triangle", cycles: 5,
+      description: "The classical pranayama ratio: hold four times the inhale, exhale twice it. Advanced — build up gently and never strain the hold.",
+      guide: { setup: [
+          "An advanced ratio — the hold is long. Never strain it.",
+          "If the hold turns effortful, exhale early and rejoin on the next cycle.",
+        ], cues: { inhale: "full but unforced", hold: "spacious — throat soft", exhale: "slow, controlled release" } },
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 16 }, { kind: "exhale", seconds: 8 }] },
     { name: "Full Journey", style: "veil",
       description: "A complete session arc: arrive with coherent breathing, deepen with long exhales, find stillness in the square, and return. A ready-made ten-minute class.",
+      guide: { setup: [
+          "Ten unhurried minutes in four movements.",
+          "Nothing to get right — just follow where it leads.",
+        ] },
       segments: [
-        { title: "arrive", cycles: 8, phases: [{ kind: "inhale", seconds: 5.5 }, { kind: "exhale", seconds: 5.5 }] },
-        { title: "deepen", cycles: 12, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
-        { title: "stillness", cycles: 6, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }, { kind: "hold", seconds: 4 }] },
-        { title: "return", cycles: 4, phases: [{ kind: "inhale", seconds: 5.5 }, { kind: "exhale", seconds: 5.5 }] },
+        { title: "arrive", note: "smooth, even breaths — land here", cycles: 8, phases: [{ kind: "inhale", seconds: 5.5 }, { kind: "exhale", seconds: 5.5 }] },
+        { title: "deepen", note: "let the exhale grow longer", cycles: 12, phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "stillness", note: "four equal sides — rest in the count", cycles: 6, phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 4 }, { kind: "exhale", seconds: 4 }, { kind: "hold", seconds: 4 }] },
+        { title: "return", note: "easy breaths — come back slowly", cycles: 4, phases: [{ kind: "inhale", seconds: 5.5 }, { kind: "exhale", seconds: 5.5 }] },
       ] },
   ].map((p) => ({ ...p, source: "preset" }));
 
@@ -756,7 +854,7 @@
         const next = segs[segIdx + 1];
         for (let c = 0; c < cycles; c++) {
           for (const p of seg.phases) {
-            const entry = { ...p, cycle: c + 1, cycles, segIdx, segCount: segs.length, segTitle: seg.title };
+            const entry = { ...p, cycle: c + 1, cycles, segIdx, segCount: segs.length, segTitle: seg.title, segNote: seg.note };
             // announce the upcoming part, but only once this one is ending
             if (next && c === cycles - 1) entry.nextTitle = next.title || `part ${segIdx + 2}`;
             this.flat.push(entry);
@@ -803,6 +901,35 @@
       $("pause-btn").textContent = "Pause";
       wakeLock.acquire();
       audio.ensure();
+      // grounding: how to actually breathe this one, before any counting
+      const setup = seq.guide?.setup || [
+        "Sit or lie comfortably — spine easy, shoulders soft.",
+        "Breathe through the nose unless the practice says otherwise.",
+      ];
+      if (localStorage.getItem("breathz.ground") !== "0") {
+        this.grounding = true;
+        $("ground-name").textContent = seq.name;
+        const ul = $("ground-lines");
+        ul.innerHTML = "";
+        setup.forEach((line, i) => {
+          const li = document.createElement("li");
+          li.textContent = line;
+          li.style.animationDelay = `${0.15 + i * 0.4}s`;
+          ul.appendChild(li);
+        });
+        document.querySelector(".session-stage").style.display = "none";
+        $("session-ground").hidden = false;
+        $("ground-begin").focus({ preventScroll: true });
+        return; // beginBreathing() continues from here
+      }
+      this.beginBreathing();
+    },
+
+    // leaves the grounding card and starts the countdown + first phase
+    beginBreathing() {
+      this.grounding = false;
+      $("session-ground").hidden = true;
+      document.querySelector(".session-stage").style.display = "";
       if (!localStorage.getItem("breathz.swipeHintShown")) {
         localStorage.setItem("breathz.swipeHintShown", "1");
         setTimeout(() => { if (this.running) toast("swipe ⟷ to change the scenery"); }, 4500);
@@ -813,8 +940,7 @@
       if (pre === 0) { this.preRolling = false; this.runPhase(); return; }
       this.preRolling = true;
       $("phase-label").textContent = "ready";
-      $("cycle-indicator").textContent =
-        `${fmtCycles(seq.cycles)} · ${fmtDuration(seqDuration(seq))}`;
+      $("cycle-indicator").textContent = practiceMeta(this.seq);
       const countdown = (n) => {
         if (!this.running) return;
         if (n === 0) { this.preRolling = false; this.runPhase(); return; }
@@ -838,6 +964,10 @@
       $("cycle-indicator").textContent = this.phaseIndicator(phase);
       $("next-up").textContent = phase.nextTitle ? `then · ${phase.nextTitle}` : "";
       $("next-up").hidden = !phase.nextTitle;
+      const cue = phase.segNote ?? this.seq.guide?.cues?.[phase.kind];
+      const showCue = cue && phase.cycle <= 2; // hand-holding early, silence after
+      $("guide-cue").textContent = showCue ? cue : "";
+      $("guide-cue").hidden = !showCue;
       $("hold-release").hidden = !phase.open;
       audio.cue(phase.kind, phase.stacked, phase.seconds);
       haptics.pulse(phase.kind);
@@ -965,6 +1095,8 @@
       this.running = false;
       this.paused = false;
       this.preRolling = false;
+      this.grounding = false;
+      $("session-ground").hidden = true;
       clearTimeout(this.preTimer);
       cancelAnimationFrame(this.raf);
       this.anims.forEach((a) => a.cancel());
@@ -1238,6 +1370,7 @@
     // session
     $("pause-btn").addEventListener("click", () => session.paused ? session.resume() : session.pause());
     $("hold-release").addEventListener("click", () => session.releaseHold());
+    $("ground-begin").addEventListener("click", () => { if (session.grounding) session.beginBreathing(); });
     $("end-btn").addEventListener("click", () => session.stop());
     $("again-btn").addEventListener("click", () => session.start(state.current));
     $("done-home-btn").addEventListener("click", () => backToHome(false));
@@ -1347,6 +1480,8 @@
       swipeStart = null;
       if (Math.abs(dx) > 48 && Math.abs(dx) > 1.8 * Math.abs(dy)) {
         session.switchStyle(dx < 0 ? 1 : -1);
+      } else if (Math.abs(dx) < 12 && Math.abs(dy) < 12 && session.running && session.grounding) {
+        session.beginBreathing();
       } else if (Math.abs(dx) < 12 && Math.abs(dy) < 12 &&
                  session.running && !session.paused && !session.preRolling &&
                  session.flat[session.idx]?.open) {
@@ -1401,6 +1536,10 @@
       const screen = currentScreen();
 
       if (screen === "session") {
+        if (session.running && session.grounding) {
+          if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); session.beginBreathing(); return; }
+          if (e.code === "Escape") { session.stop(); return; }
+        }
         if (onButton) return;
         if (session.running) {
           if (e.code === "Space") {
