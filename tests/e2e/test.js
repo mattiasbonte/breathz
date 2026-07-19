@@ -590,14 +590,18 @@ function check(name, cond) {
   await page.waitForSelector("#intention-panel:not([hidden])");
   check("framing control shown when image set", await page.locator("#vision-pos").isVisible());
   await page.locator("#vision-pos-frame").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300); // frame adopts the image's aspect ratio
   const frameBox = await page.locator("#vision-pos-frame").boundingBox();
-  await page.mouse.move(frameBox.x + frameBox.width / 2, frameBox.y + frameBox.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(frameBox.x + frameBox.width / 2 - 80, frameBox.y + frameBox.height / 2 + 30, { steps: 6 });
-  await page.mouse.up();
+  await page.mouse.click(frameBox.x + frameBox.width * 0.78, frameBox.y + frameBox.height * 0.3);
   const focus = await page.evaluate(() => localStorage.getItem("breathz.visionFocus"));
   const [ffx, ffy] = (focus || "50,50").split(",").map(Number);
-  check(`drag moves the focal point (${focus})`, ffx > 55 && ffy < 45);
+  check(`tap sets the focal point on both axes (${focus})`, Math.abs(ffx - 78) < 4 && Math.abs(ffy - 30) < 4);
+  const dotPos = await page.evaluate(() => {
+    const d = document.getElementById("vision-pos-dot");
+    return [parseFloat(d.style.left), parseFloat(d.style.top)];
+  });
+  check(`marker follows the tap (${dotPos.map((n) => n.toFixed(0)).join(",")})`,
+    Math.abs(dotPos[0] - ffx) < 1 && Math.abs(dotPos[1] - ffy) < 1);
   check("backdrop layer follows the framing", await page.evaluate(() => {
     const want = localStorage.getItem("breathz.visionFocus").split(",").map(Number);
     const got = document.getElementById("vb-clear").style.backgroundPosition.split(" ").map(parseFloat);

@@ -1536,15 +1536,29 @@
       }));
 
     // intention: phrase persists; an image becomes the Vision style
+    function placeVisionDot() {
+      const [x, y] = (localStorage.getItem(LS_VFOCUS) || "50,50").split(",").map(Number);
+      const dot = $("vision-pos-dot");
+      dot.style.left = `${isFinite(x) ? x : 50}%`;
+      dot.style.top = `${isFinite(y) ? y : 50}%`;
+    }
+
     function refreshVisionPos() {
       const img = localStorage.getItem(LS_VISION);
       $("vision-pos").hidden = !img;
-      if (img) {
-        const frame = $("vision-pos-frame");
-        frame.style.backgroundImage = `url(${img})`;
-        frame.style.backgroundPosition = visionFocus();
-        $("vision-pos-hint").textContent = t("visionPosHint");
-      }
+      if (!img) return;
+      const frame = $("vision-pos-frame");
+      frame.style.backgroundImage = `url(${img})`;
+      const probe = new Image();
+      probe.onload = () => {
+        // frame takes the image's own shape (capped in height) so the whole
+        // picture is visible and both axes are always meaningful
+        frame.style.aspectRatio = `${probe.width} / ${probe.height}`;
+        frame.style.maxWidth = `${Math.round((260 * probe.width) / probe.height)}px`;
+      };
+      probe.src = img;
+      placeVisionDot();
+      $("vision-pos-hint").textContent = t("visionPosHint");
     }
 
     $("intention-toggle").addEventListener("click", () => {
@@ -1558,26 +1572,26 @@
       }
     });
 
-    // drag (mouse or touch alike) to choose which part of the image shows
+    // tap or drag (mouse or touch alike) to mark the focal point of the image
     (() => {
       const frame = $("vision-pos-frame");
-      let drag = null;
-      frame.addEventListener("pointerdown", (e) => {
-        const [x, y] = (localStorage.getItem(LS_VFOCUS) || "50,50").split(",").map(Number);
-        drag = { x: e.clientX, y: e.clientY, fx: isFinite(x) ? x : 50, fy: isFinite(y) ? y : 50 };
-        frame.setPointerCapture(e.pointerId);
-      });
-      frame.addEventListener("pointermove", (e) => {
-        if (!drag) return;
+      let picking = false;
+      const pick = (e) => {
         const r = frame.getBoundingClientRect();
-        const fx = Math.min(100, Math.max(0, drag.fx - ((e.clientX - drag.x) / r.width) * 120));
-        const fy = Math.min(100, Math.max(0, drag.fy - ((e.clientY - drag.y) / r.height) * 120));
+        const fx = Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100));
+        const fy = Math.min(100, Math.max(0, ((e.clientY - r.top) / r.height) * 100));
         localStorage.setItem(LS_VFOCUS, `${fx.toFixed(1)},${fy.toFixed(1)}`);
-        frame.style.backgroundPosition = visionFocus();
+        placeVisionDot();
+      };
+      frame.addEventListener("pointerdown", (e) => {
+        picking = true;
+        frame.setPointerCapture(e.pointerId);
+        pick(e);
       });
+      frame.addEventListener("pointermove", (e) => { if (picking) pick(e); });
       const done = () => {
-        if (!drag) return;
-        drag = null;
+        if (!picking) return;
+        picking = false;
         refreshVisionBackdrop();
         builtStyleId = null; // vision style rebuilds with the new framing
         styleDemo.start($("demo-stage"), demoPace(state.current));

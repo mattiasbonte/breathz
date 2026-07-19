@@ -718,16 +718,27 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 
 .vision-pos { margin-top: 16px; }
 .vision-pos-frame {
+  position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  margin-inline: auto;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background-size: cover;
-  background-position: 50% 50%;
-  cursor: grab;
-  touch-action: none; /* the drag owns the gesture on touch screens */
+  background-size: cover; /* frame matches the image aspect, so the whole image shows */
+  cursor: crosshair;
+  touch-action: none; /* the gesture owns the pointer on touch screens */
 }
-.vision-pos-frame:active { cursor: grabbing; }
+.vision-pos-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(10, 14, 31, 0.55), 0 0 14px rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
 .vision-pos-hint {
   margin-top: 8px;
   color: var(--ink-faint);

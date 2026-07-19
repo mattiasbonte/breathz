@@ -147,7 +147,7 @@
       </div>
 
       <div class="intention-box">
-        <button class="link-btn" id="intention-toggle" data-i18n="setIntention">set an intention</button>
+        <button class="link-btn" id="intention-toggle" data-i18n="setIntention">set an intention or image</button>
         <div class="intention-panel" id="intention-panel" hidden>
           <input type="text" id="intention-text" maxlength="120" data-i18n-ph="intentionPh" placeholder="I breathe toward…">
           <div class="intention-actions">
@@ -156,7 +156,9 @@
             <button class="pill-btn" id="intention-clear" hidden data-i18n="removeImage">remove image</button>
           </div>
           <div class="vision-pos" id="vision-pos" hidden>
-            <div class="vision-pos-frame" id="vision-pos-frame"></div>
+            <div class="vision-pos-frame" id="vision-pos-frame">
+              <div class="vision-pos-dot" id="vision-pos-dot"></div>
+            </div>
             <p class="vision-pos-hint" id="vision-pos-hint"></p>
           </div>
           <p class="intention-help">
