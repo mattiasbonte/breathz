@@ -1749,6 +1749,11 @@
           else $("home-begin").click();
         }
         else if (e.key === "n" || e.key === "N") { e.preventDefault(); openBuilder(null); }
+        else if (e.key === "l" || e.key === "L") { if (journal().length) openJournal(); }
+        else if (e.key === "p" || e.key === "P") { openPractitioners(); }
+      } else if (screen === "journal" || screen === "practitioners") {
+        if (e.code === "ArrowLeft" || e.code === "Backspace") { e.preventDefault(); backToHome(); }
+        else if (screen === "journal" && (e.key === "c" || e.key === "C")) $("journal-copy").click();
       } else if (screen === "preview") {
         const beginSession = () => {
           const err = validateSequence(state.current);

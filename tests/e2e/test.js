@@ -359,6 +359,15 @@ function check(name, cond) {
   check("journal page lists sessions",
     (await page.locator("#journal-list li").count()) >= 1 &&
     (await page.textContent("#journal-list")).includes("Tiny Test"));
+  await page.keyboard.press("c"); // C copies from the journal page too
+  await page.waitForTimeout(200);
+  const cLog = await page.evaluate(() => navigator.clipboard.readText());
+  check("C key copies log", cLog.startsWith("my breathz practice log"));
+  await page.keyboard.press("ArrowLeft"); // left backs out
+  await page.waitForSelector("#screen-home.active");
+  await page.keyboard.press("l"); // L reopens the log from home
+  await page.waitForSelector("#screen-journal.active");
+  check("keyboard: L opens log, left backs out, C copies", true);
   await page.locator("#journal-copy").click();
   const log = await page.evaluate(() => navigator.clipboard.readText());
   check("practice log copies from page",
