@@ -27,7 +27,7 @@ function check(name, cond) {
     document.getElementById("home-stage").getAnimations({ subtree: true }).length);
   check(`hero demo is breathing (${heroAnims} anims)`, heroAnims > 0);
   const presetCount = await page.locator("#preset-grid .seq-card").count();
-  check(`all presets render (${presetCount})`, presetCount === 26);
+  check(`all presets render (${presetCount})`, presetCount === 29);
 
   // --- moods filter practices
   const moodCount = await page.locator(".mood-chip").count();
@@ -43,7 +43,7 @@ function check(name, cond) {
   check("mood note shown", note.length > 10);
   await page.locator('.mood-chip:has-text("anxious")').click(); // deselect
   check("deselect restores all practices",
-    (await page.locator("#preset-grid .seq-card").count()) === 26);
+    (await page.locator("#preset-grid .seq-card").count()) === 29);
 
   // --- home Begin goes straight into a session
   await page.locator("#home-begin").click();
@@ -306,6 +306,14 @@ function check(name, cond) {
   const fireCue = await page.textContent("#guide-cue");
   check(`guide cue shows early ("${fireCue}")`,
     ["passive — belly springs back", "snap the navel in"].includes(fireCue));
+  await page.waitForTimeout(3200); // well past cycle 2 (1s cycles)
+  check("guidance stays visible, softened",
+    await page.evaluate(() => {
+      const c = document.getElementById("guide-cue");
+      return !c.hidden && c.classList.contains("cue-soft");
+    }));
+  await page.mouse.move(200, 200); // wake the faded chrome before clicking End
+  await page.waitForTimeout(200);
   await page.locator("#end-btn").click();
   await page.waitForSelector("#screen-preview.active");
   await page.keyboard.press("Escape");
@@ -646,6 +654,10 @@ function check(name, cond) {
   const scrim = await page.evaluate(() =>
     getComputedStyle(document.querySelector(".vision-backdrop"), "::after").backgroundColor);
   check(`done card deepens the scrim (${scrim})`, scrim.includes("0.74"));
+  check("done card paints above the veil", await page.evaluate(() => {
+    const s = getComputedStyle(document.getElementById("session-done"));
+    return s.position === "relative" && s.zIndex === "2";
+  }));
   check("media session cleared after the session",
     await page.evaluate(() => navigator.mediaSession?.playbackState !== "playing"));
   await page.locator("#done-home-btn").click();

@@ -200,6 +200,37 @@
         { title: "the stillness · not one movement", note: "spine tall, still as stone — the body breathes itself", cycles: 18,
           phases: [{ kind: "inhale", seconds: 4.5 }, { kind: "exhale", seconds: 5.5 }] },
       ] },
+    { name: "Sleep Ladder", style: "beacon",
+      description: "A descending ladder for sleep: the inhale stays at four counts while the exhale grows longer each part — six, seven, then eight. By the last rung the body has taken the hint. Best lying in bed, lights out.",
+      guide: { setup: [
+          "Lying in bed, lights low or off.",
+          "Nose breathing — the exhale grows one count longer each part.",
+          "Nothing to achieve: each longer out-breath sinks you further.",
+        ], cues: { inhale: "easy — four counts", exhale: "longer — sink deeper" } },
+      segments: [
+        { title: "first rung · out for six", note: "settle in — exhale a touch longer than the in", cycles: 6,
+          phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 6 }] },
+        { title: "second rung · out for seven", note: "heavier now — let the bed hold you", cycles: 6,
+          phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 7 }] },
+        { title: "last rung · out for eight", note: "almost there — each exhale is permission to drift", cycles: 8,
+          phases: [{ kind: "inhale", seconds: 4 }, { kind: "exhale", seconds: 8 }] },
+      ] },
+    { name: "Cyclic Sighing", style: "orb", cycles: 28,
+      description: "Five minutes of repeated physiological sighs — two nose inhales, one long mouth exhale. In a 2023 Stanford trial this was the most effective protocol tested for lowering stress and lifting mood, practiced daily. A beautiful wind-down before bed.",
+      guide: { setup: [
+          "Sit or lie comfortably.",
+          "Two nose inhales — a deep one, then a short sip on top.",
+          "Then one long, unhurried sigh out through the mouth.",
+        ], cues: { inhale: "nose — deep, then the sip", exhale: "long sigh — let it all fall" } },
+      phases: [{ kind: "inhale", seconds: 2.5 }, { kind: "inhale", seconds: 1 }, { kind: "exhale", seconds: 6 }] },
+    { name: "Moon Nostril Pace", style: "moon", cycles: 12,
+      description: "Chandra Bhedana, the moon-side breath: inhale through the left nostril only, exhale through the right. Yogic tradition holds the left channel to be the cooling, calming one — a pre-sleep classic.",
+      guide: { setup: [
+          "Right thumb closes the right nostril; inhale left.",
+          "Then close the left with your ring finger and exhale right.",
+          "Cool in through the moon side, warm out — every cycle the same.",
+        ], cues: { inhale: "left nostril — cool in", hold: "a soft beat", exhale: "right side — warm out" } },
+      phases: [{ kind: "inhale", seconds: 4 }, { kind: "hold", seconds: 2 }, { kind: "exhale", seconds: 6 }] },
     { name: "Nadi Shodhana Pace", style: "sway", cycles: 12,
       description: "The timing of yogic alternate-nostril breathing: close one nostril, inhale, hold, exhale through the other, then switch sides each cycle. Balancing and clarifying.",
       guide: { setup: [
@@ -291,7 +322,7 @@
       practices: ["Box Breathing", "Coherent Breathing", "Extended Exhale", "Storm & Stillness"] },
     { id: "sleepless", label: "can't sleep",
       note: "Exhaling far longer than you inhale tells the body it's safe to power down.",
-      practices: ["4-7-8 Relaxing Breath", "Deep Sleep 4-8", "Wind Down", "Humming Breath"] },
+      practices: ["4-7-8 Relaxing Breath", "Sleep Ladder", "Cyclic Sighing", "Deep Sleep 4-8", "Moon Nostril Pace", "Wind Down", "Humming Breath"] },
     { id: "tired", label: "low energy",
       note: "Brisk, even breaths gently raise alertness. Stop if you feel light-headed.",
       practices: ["Breath of Fire", "Energize", "Bhastrika Bellows", "Kapalabhati Pace"] },
@@ -1222,10 +1253,12 @@
       $("cycle-indicator").textContent = this.phaseIndicator(phase);
       $("next-up").textContent = phase.nextTitle ? t("thenSep") + phase.nextTitle : "";
       $("next-up").hidden = !phase.nextTitle;
+      // the guidance line stays for the whole session — bright while learning
+      // the part (first two cycles), then softened to a whisper
       const cue = phase.segNote ?? this.loc?.guide?.cues?.[phase.kind];
-      const showCue = cue && phase.cycle <= 2; // hand-holding early, silence after
-      $("guide-cue").textContent = showCue ? cue : "";
-      $("guide-cue").hidden = !showCue;
+      $("guide-cue").textContent = cue || "";
+      $("guide-cue").hidden = !cue;
+      $("guide-cue").classList.toggle("cue-soft", !!cue && phase.cycle > 2);
       $("hold-release").hidden = !phase.open;
       audio.cue(phase.kind, phase.stacked, phase.seconds);
       haptics.pulse(phase.kind);

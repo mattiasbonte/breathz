@@ -964,11 +964,11 @@ body.paused .depth-field * { animation-play-state: paused; }
 .session-controls, .session-info {
   transition: opacity 1.4s var(--ease-breath);
 }
-body.chrome-idle .session-controls,
-body.chrome-idle .session-info {
+body.chrome-idle .session-controls {
   opacity: 0;
   pointer-events: none;
 }
+body.chrome-idle .session-info { opacity: 0.55; }
 /* numbers soften too once you're settled — guidance, not a clock */
 .phase-count { transition: opacity 1.4s var(--ease-breath); }
 body.chrome-idle .phase-count { opacity: 0.4; }
@@ -978,6 +978,8 @@ body.chrome-idle .phase-count { opacity: 0.4; }
 #fullscreen-btn.fs-active .icon-fs-exit { display: block; }
 
 .session-stage {
+  position: relative;
+  z-index: 2; /* above the vision backdrop and depth field */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1477,11 +1479,15 @@ body.paused .phase-label { opacity: 0.4; }
 
 /* grounding card — how to breathe this one, read at your own pace */
 .session-ground {
+  position: relative;
+  z-index: 2; /* above the vision backdrop */
   text-align: center;
   padding: 0 24px;
   max-width: 560px;
 }
 .session-ground h2 {
+  text-shadow: none;
+  filter: drop-shadow(0 2px 12px rgba(10, 14, 31, 0.75));
   font-size: clamp(1.6rem, 4.5vw, 2.3rem);
   font-weight: 200;
   background: linear-gradient(120deg, #e8ebf7 30%, #a5b4fc 70%, #f0abfc);
@@ -1516,6 +1522,8 @@ body.paused .phase-label { opacity: 0.4; }
   letter-spacing: 0.12em;
 }
 
+.guide-cue { transition: opacity 1.2s var(--ease-breath); }
+.guide-cue.cue-soft { opacity: 0.45; }
 .guide-cue {
   color: var(--ink-dim);
   font-weight: 300;
@@ -1528,6 +1536,8 @@ body.paused .phase-label { opacity: 0.4; }
 }
 
 .session-done {
+  position: relative;
+  z-index: 2; /* above the vision backdrop */
   text-align: center;
   padding: 0 24px;
 }
