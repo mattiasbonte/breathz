@@ -594,6 +594,8 @@ function check(name, cond) {
     ms.title === "Coherent Breathing" && ms.state === "playing");
   const endBg = await page.evaluate(() => getComputedStyle(document.getElementById("end-btn")).backgroundColor);
   check(`session buttons carry their own floor (${endBg})`, endBg.includes("rgba(10, 14, 31"));
+  const cueBg = await page.evaluate(() => getComputedStyle(document.getElementById("guide-cue")).backgroundColor);
+  check(`guidance gets a floor over photos (${cueBg})`, cueBg.includes("rgba(10, 14, 31"));
   await page.waitForTimeout(1600);
   const clarity1 = await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById("vb-clear")).opacity));
   check(`vision clarity breath-coupled (${clarity1.toFixed(2)})`, clarity1 > 0.06);

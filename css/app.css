@@ -33,7 +33,15 @@ html, body {
   height: 100%;
 }
 
-html { background: var(--bg-0); }
+html {
+  background: var(--bg-0);
+  /* iOS: overflow-x on body alone still lets the document pan sideways
+     over decorative overflow — clip the root scroller itself */
+  overflow-x: clip;
+}
+@supports not (overflow: clip) {
+  html { overflow-x: hidden; }
+}
 
 /* the ambient gradient lives on a fixed, viewport-sized layer — a tiling
    `background-attachment: fixed` gradient on body drew a faint seam at
@@ -876,6 +884,25 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   background: rgba(10, 14, 31, 0.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+}
+/* when a photo glows behind the session, the guidance text gets its own
+   floor too — a white-ish image must never decide readability */
+.screen-session:has(#vision-backdrop:not([hidden])) .guide-cue,
+.screen-session:has(#vision-backdrop:not([hidden])) .intention-line,
+.screen-session:has(#vision-backdrop:not([hidden])) .session-info {
+  background: rgba(10, 14, 31, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 16px;
+  padding: 7px 16px;
+  color: var(--ink);
+}
+.screen-session:has(#vision-backdrop:not([hidden])) .guide-cue.cue-soft {
+  opacity: 0.85; /* the whisper level is too soft over a bright photo */
+}
+.screen-session:has(#vision-backdrop:not([hidden])) .phase-label,
+.screen-session:has(#vision-backdrop:not([hidden])) .phase-count {
+  text-shadow: 0 1px 6px rgba(10, 14, 31, 0.9), 0 0 18px rgba(10, 14, 31, 0.85);
 }
 
 /* ---- depth stack: fractal nebula + two star layers with parallax ----
