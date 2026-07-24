@@ -128,9 +128,12 @@
   <section class="screen screen-preview" id="screen-preview" aria-live="polite">
     <button class="back-btn" id="preview-back" aria-label="Back">←</button>
     <div class="preview-body">
-      <h2 id="preview-name">Box Breathing</h2>
+      <div class="name-row">
+        <h2 id="preview-name">Box Breathing</h2>
+        <button class="info-btn" id="desc-toggle" aria-expanded="false" title="about this practice"><span aria-hidden="true">i</span></button>
+      </div>
       <p class="preview-by" id="preview-by" hidden></p>
-      <p class="preview-desc" id="preview-desc"></p>
+      <p class="preview-desc" id="preview-desc" hidden></p>
       <div class="preview-pattern" id="preview-pattern"></div>
       <div class="preview-meta">
         <label class="cycles-label">
@@ -140,10 +143,14 @@
         <span class="preview-duration" id="preview-duration"></span>
       </div>
       <div class="style-picker">
-        <span class="style-picker-label" data-i18n="animation">animation</span>
-        <div class="style-row" id="style-row" role="radiogroup" aria-label="Animation style"></div>
         <div class="style-demo" aria-hidden="true"><div class="stage" id="demo-stage"></div></div>
         <p class="style-hint" id="style-hint"></p>
+        <button class="anim-toggle" id="anim-toggle" aria-expanded="false" aria-controls="style-row">
+          <span data-i18n="animation">animation</span>
+          <span class="anim-current" id="anim-current"></span>
+          <span class="anim-chevron" aria-hidden="true">&#9662;</span>
+        </button>
+        <div class="style-row" id="style-row" role="radiogroup" aria-label="Animation style" hidden></div>
       </div>
 
       <div class="intention-box">

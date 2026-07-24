@@ -166,7 +166,7 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 
 /* ---------- buttons ---------- */
 
-.ghost-btn, .primary-btn, .pill-btn, .back-btn, .link-btn {
+.ghost-btn, .primary-btn, .pill-btn, .back-btn, .link-btn, .anim-toggle, .info-btn {
   font-family: inherit;
   cursor: pointer;
   border: none;
@@ -583,13 +583,41 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   letter-spacing: 0.02em;
 }
 
+.name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.info-btn {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--ink-faint);
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.25s, border-color 0.25s;
+}
+.info-btn:hover { color: var(--ink); border-color: rgba(154, 163, 199, 0.4); }
+.info-btn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
+
 .preview-desc {
   margin-top: 14px;
+  max-width: 520px;
+  margin-inline: auto;
   color: var(--ink-dim);
   font-weight: 300;
   line-height: 1.65;
   font-size: 0.95rem;
 }
+
+.reveal { animation: ground-line-in 0.45s var(--ease-breath); }
 
 .preview-pattern {
   display: flex;
@@ -637,22 +665,35 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
 
 .preview-duration { font-weight: 300; letter-spacing: 0.05em; }
 
-.style-picker { margin-top: 30px; }
+.style-picker { margin-top: 18px; }
 
-.style-picker-label {
-  display: block;
+.anim-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--ink-faint);
   font-size: 0.72rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--ink-faint);
-  margin-bottom: 12px;
+  transition: color 0.25s;
 }
+.anim-toggle:hover { color: var(--ink-dim); }
+.anim-toggle .anim-current {
+  color: var(--ink-dim);
+  text-transform: none;
+  letter-spacing: 0.05em;
+  font-size: 0.88rem;
+}
+.anim-chevron { font-size: 0.65rem; transition: transform 0.3s var(--ease-breath); }
+.anim-toggle[aria-expanded="true"] .anim-chevron { transform: rotate(180deg); }
 
 .style-row {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
+  margin-top: 16px;
 }
 
 .style-chip {
@@ -678,7 +719,7 @@ body.in-session .topbar { opacity: 0; pointer-events: none; }
   position: relative;
   width: 138px;
   height: 138px;
-  margin: 24px auto 0;
+  margin: 6px auto 0;
 }
 
 .style-hint {

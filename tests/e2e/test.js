@@ -61,6 +61,18 @@ function check(name, cond) {
   check("edit available on preset", await page.locator("#edit-btn").isVisible());
   check("delete hidden on preset", await page.locator("#delete-btn").isHidden());
 
+  // --- clean preview: story and animation picker collapsed by default
+  check("description hidden until asked", await page.locator("#preview-desc").isHidden());
+  await page.locator("#desc-toggle").click();
+  check("info dot reveals the description",
+    (await page.locator("#preview-desc").isVisible()) &&
+    (await page.textContent("#preview-desc")).length > 20);
+  check("animation chips collapsed", await page.locator("#style-row").isHidden());
+  const animLabel = await page.textContent("#anim-current");
+  check(`current animation named (${animLabel})`, animLabel.length > 2);
+  await page.locator("#anim-toggle").click();
+  check("toggle expands the animation chips", await page.locator("#style-row").isVisible());
+
   // --- style selection is reflected in share encoding
   await page.evaluate(() => {
     const idx = window.BreathStyles.findIndex((s) => s.id === "tide");

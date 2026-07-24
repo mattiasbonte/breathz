@@ -778,6 +778,8 @@
     document.querySelectorAll("[data-i18n-ph]").forEach((el2) => { el2.placeholder = t(el2.dataset.i18nPh); });
     document.querySelector(".builder-text-help").textContent = t("textHelp");
     document.querySelector(".intention-help").textContent = t("intentionHelp");
+    $("desc-toggle").title = t("aboutPractice");
+    $("desc-toggle").setAttribute("aria-label", t("aboutPractice"));
     M.setStrings({ min: t("minUnit"), cycle: t("cycleWord"), cycles: t("cyclesWord"), parts: t("partsWord") });
     const row = $("foot-langs");
     row.innerHTML = "";
@@ -887,6 +889,7 @@
       row.appendChild(btn);
     }
     $("style-hint").textContent = I18N.styleHint(activeStyle());
+    $("anim-current").textContent = I18N.styleName(activeStyle());
   }
 
   // ---------------------------------------------------------- home
@@ -1119,6 +1122,11 @@
     $("preview-by").textContent = seq.by ? t("preparedBy", { name: seq.by }) : "";
     $("preview-by").hidden = !seq.by;
     $("preview-desc").textContent = L.description || "";
+    $("preview-desc").hidden = true; // the story waits behind the info dot
+    $("desc-toggle").setAttribute("aria-expanded", "false");
+    $("desc-toggle").hidden = !L.description;
+    $("style-row").hidden = true; // swipe in-session, or expand to browse
+    $("anim-toggle").setAttribute("aria-expanded", "false");
     $("preview-pattern").innerHTML = patternHTML(L, true, false); // detail view: all parts
     document.querySelector(".cycles-label").hidden = isProgram(seq);
     if (!isProgram(seq)) $("preview-cycles").value = segmentsOf(seq)[0].cycles;
@@ -1811,6 +1819,20 @@
       builtStyleId = null; // vision style rebuilds with the new framing
       styleDemo.start($("demo-stage"), demoPace(state.current));
     }
+
+    $("desc-toggle").addEventListener("click", () => {
+      const open = $("preview-desc").hidden;
+      $("preview-desc").hidden = !open;
+      if (open) $("preview-desc").classList.add("reveal");
+      $("desc-toggle").setAttribute("aria-expanded", open ? "true" : "false");
+    });
+
+    $("anim-toggle").addEventListener("click", () => {
+      const open = $("style-row").hidden;
+      $("style-row").hidden = !open;
+      if (open) $("style-row").classList.add("reveal");
+      $("anim-toggle").setAttribute("aria-expanded", open ? "true" : "false");
+    });
 
     $("intention-toggle").addEventListener("click", () => {
       const panel = $("intention-panel");
