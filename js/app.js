@@ -778,8 +778,7 @@
     document.querySelectorAll("[data-i18n-ph]").forEach((el2) => { el2.placeholder = t(el2.dataset.i18nPh); });
     document.querySelector(".builder-text-help").textContent = t("textHelp");
     document.querySelector(".intention-help").textContent = t("intentionHelp");
-    $("desc-toggle").title = t("aboutPractice");
-    $("desc-toggle").setAttribute("aria-label", t("aboutPractice"));
+    $("preview-desc").title = t("aboutPractice");
     M.setStrings({ min: t("minUnit"), cycle: t("cycleWord"), cycles: t("cyclesWord"), parts: t("partsWord") });
     const row = $("foot-langs");
     row.innerHTML = "";
@@ -869,6 +868,14 @@
 
   // ---------------------------------------------------------- style picker
 
+  function selectStyle(id) {
+    currentStyleId = id;
+    localStorage.setItem(LS_STYLE, id);
+    if (state.current) state.current.style = id; // override sticks to this practice
+    renderStylePicker();
+    styleDemo.start($("demo-stage"), demoPace(state.current));
+  }
+
   function renderStylePicker() {
     const row = $("style-row");
     row.innerHTML = "";
@@ -879,13 +886,7 @@
       btn.setAttribute("role", "radio");
       btn.setAttribute("aria-checked", selected ? "true" : "false");
       btn.textContent = I18N.styleName(s);
-      btn.addEventListener("click", () => {
-        currentStyleId = s.id;
-        localStorage.setItem(LS_STYLE, s.id);
-        if (state.current) state.current.style = s.id; // override sticks to this practice
-        renderStylePicker();
-        styleDemo.start($("demo-stage"), demoPace(state.current));
-      });
+      btn.addEventListener("click", () => selectStyle(s.id));
       row.appendChild(btn);
     }
     $("style-hint").textContent = I18N.styleHint(activeStyle());
@@ -1113,6 +1114,13 @@
 
   // ---------------------------------------------------------- preview
 
+  function renderPreviewPattern(expanded) {
+    const L = LP(state.current);
+    $("preview-pattern").innerHTML = patternHTML(L, expanded, true);
+    const more = $("preview-pattern").querySelector(".chip-more");
+    if (more) more.addEventListener("click", () => renderPreviewPattern(!expanded));
+  }
+
   function openPreview(seq) {
     state.current = structuredClone(seq);
     // each practice opens in its natural animation; the picker still overrides
@@ -1122,12 +1130,12 @@
     $("preview-by").textContent = seq.by ? t("preparedBy", { name: seq.by }) : "";
     $("preview-by").hidden = !seq.by;
     $("preview-desc").textContent = L.description || "";
-    $("preview-desc").hidden = true; // the story waits behind the info dot
-    $("desc-toggle").setAttribute("aria-expanded", "false");
-    $("desc-toggle").hidden = !L.description;
-    $("style-row").hidden = true; // swipe in-session, or expand to browse
+    $("preview-desc").hidden = !L.description;
+    $("preview-desc").classList.add("desc-collapsed"); // a one-line teaser, tap for the story
+    $("preview-desc").setAttribute("aria-expanded", "false");
+    $("style-row").hidden = true; // swipe the demo, or expand to browse
     $("anim-toggle").setAttribute("aria-expanded", "false");
-    $("preview-pattern").innerHTML = patternHTML(L, true, false); // detail view: all parts
+    renderPreviewPattern(false); // programs fold to one "view N parts" chip
     document.querySelector(".cycles-label").hidden = isProgram(seq);
     if (!isProgram(seq)) $("preview-cycles").value = segmentsOf(seq)[0].cycles;
     updatePreviewDuration();
@@ -1820,12 +1828,34 @@
       styleDemo.start($("demo-stage"), demoPace(state.current));
     }
 
-    $("desc-toggle").addEventListener("click", () => {
-      const open = $("preview-desc").hidden;
-      $("preview-desc").hidden = !open;
-      if (open) $("preview-desc").classList.add("reveal");
-      $("desc-toggle").setAttribute("aria-expanded", open ? "true" : "false");
+    const toggleDesc = () => {
+      const open = $("preview-desc").classList.toggle("desc-collapsed");
+      $("preview-desc").setAttribute("aria-expanded", open ? "false" : "true");
+    };
+    $("preview-desc").addEventListener("click", toggleDesc);
+    $("preview-desc").addEventListener("keydown", (e) => {
+      if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); toggleDesc(); }
     });
+
+    // swipe across the demo to try the next scenery — same gesture as in-session
+    (() => {
+      let start = null;
+      const down = (e) => { start = { x: e.clientX, y: e.clientY, id: e.pointerId }; };
+      const up = (e) => {
+        if (!start || e.pointerId !== start.id) { start = null; return; }
+        const dx = e.clientX - start.x, dy = e.clientY - start.y;
+        start = null;
+        if (Math.abs(dx) > 36 && Math.abs(dx) > 1.6 * Math.abs(dy)) {
+          const styles = window.BreathStyles;
+          const i = styles.findIndex((s) => s.id === currentStyleId);
+          selectStyle(styles[(i + (dx < 0 ? 1 : -1) + styles.length) % styles.length].id);
+        }
+      };
+      for (const el of [document.querySelector(".style-demo"), $("style-hint")]) {
+        el.addEventListener("pointerdown", down);
+        el.addEventListener("pointerup", up);
+      }
+    })();
 
     $("anim-toggle").addEventListener("click", () => {
       const open = $("style-row").hidden;

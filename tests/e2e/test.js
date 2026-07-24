@@ -61,17 +61,29 @@ function check(name, cond) {
   check("edit available on preset", await page.locator("#edit-btn").isVisible());
   check("delete hidden on preset", await page.locator("#delete-btn").isHidden());
 
-  // --- clean preview: story and animation picker collapsed by default
-  check("description hidden until asked", await page.locator("#preview-desc").isHidden());
-  await page.locator("#desc-toggle").click();
-  check("info dot reveals the description",
-    (await page.locator("#preview-desc").isVisible()) &&
-    (await page.textContent("#preview-desc")).length > 20);
+  // --- clean preview: teaser description, collapsed animation picker
+  check("description teased in one clamped line", await page.evaluate(() => {
+    const d = document.getElementById("preview-desc");
+    return d.classList.contains("desc-collapsed") && d.scrollHeight > d.clientHeight;
+  }));
+  await page.locator("#preview-desc").click();
+  check("tap unfolds the full story", await page.evaluate(() => {
+    const d = document.getElementById("preview-desc");
+    return !d.classList.contains("desc-collapsed") && d.clientHeight >= d.scrollHeight - 1;
+  }));
   check("animation chips collapsed", await page.locator("#style-row").isHidden());
   const animLabel = await page.textContent("#anim-current");
   check(`current animation named (${animLabel})`, animLabel.length > 2);
   await page.locator("#anim-toggle").click();
   check("toggle expands the animation chips", await page.locator("#style-row").isVisible());
+  const demoBox = await page.locator(".style-demo").boundingBox();
+  const beforeStyle = await page.evaluate(() => localStorage.getItem("breathz.style"));
+  await page.mouse.move(demoBox.x + demoBox.width - 8, demoBox.y + demoBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(demoBox.x + 8, demoBox.y + demoBox.height / 2, { steps: 5 });
+  await page.mouse.up();
+  const afterStyle = await page.evaluate(() => localStorage.getItem("breathz.style"));
+  check(`demo swipe switches animation (${beforeStyle} -> ${afterStyle})`, afterStyle !== beforeStyle);
 
   // --- style selection is reflected in share encoding
   await page.evaluate(() => {
@@ -404,8 +416,11 @@ function check(name, cond) {
   // --- programs: multi-part sessions with open holds
   await page.locator('#preset-grid .seq-card:has-text("Power Rounds")').click();
   await page.waitForSelector("#screen-preview.active");
-  const segChips = await page.locator("#preview-pattern .chip.seg").count();
-  check(`program preview shows parts (${segChips})`, segChips === 9);
+  check("program parts folded to one chip",
+    (await page.locator("#preview-pattern .chip.seg").count()) === 1);
+  await page.locator("#preview-pattern .chip-more").click();
+  const segChips = await page.locator("#preview-pattern .chip.seg:not(.chip-more)").count();
+  check(`expanding reveals the parts (${segChips})`, segChips === 9);
   check("cycles input hidden for programs", await page.locator(".cycles-label").isHidden());
   const meta = await page.textContent("#preview-duration");
   check(`program duration estimated (${meta})`, meta.includes("≈"));

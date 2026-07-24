@@ -128,12 +128,9 @@
   <section class="screen screen-preview" id="screen-preview" aria-live="polite">
     <button class="back-btn" id="preview-back" aria-label="Back">←</button>
     <div class="preview-body">
-      <div class="name-row">
-        <h2 id="preview-name">Box Breathing</h2>
-        <button class="info-btn" id="desc-toggle" aria-expanded="false" title="about this practice"><span aria-hidden="true">i</span></button>
-      </div>
+      <h2 id="preview-name">Box Breathing</h2>
       <p class="preview-by" id="preview-by" hidden></p>
-      <p class="preview-desc" id="preview-desc" hidden></p>
+      <p class="preview-desc desc-collapsed" id="preview-desc" role="button" tabindex="0" aria-expanded="false"></p>
       <div class="preview-pattern" id="preview-pattern"></div>
       <div class="preview-meta">
         <label class="cycles-label">
